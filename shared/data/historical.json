@@ -1,0 +1,60 @@
+{
+  "segments": [
+    {
+      "segment": "Micro retail & services",
+      "leads": 2709,
+      "activated": 110,
+      "conversion": 4.06,
+      "cac": 20007,
+      "churn": 22.7
+    },
+    {
+      "segment": "Professional offices",
+      "leads": 1247,
+      "activated": 138,
+      "conversion": 11.07,
+      "cac": 10695,
+      "churn": 13.8
+    },
+    {
+      "segment": "Small manufacturers",
+      "leads": 289,
+      "activated": 37,
+      "conversion": 12.8,
+      "cac": 15324,
+      "churn": 8.1
+    },
+    {
+      "segment": "Small multi-site businesses",
+      "leads": 755,
+      "activated": 83,
+      "conversion": 10.99,
+      "cac": 15614,
+      "churn": 10.8
+    }
+  ],
+  "totalLeads": 5000,
+  "activated": 368,
+  "dropReasons": {
+    "Installation delayed beyond 21 days": 98,
+    "Not interested on first call": 470,
+    "Decided to wait": 107,
+    "Competitor offered cheaper plan": 207,
+    "Quote took too long to arrive": 179,
+    "Owner had no time for a visit": 531,
+    "Quote too complex to understand": 206,
+    "Locked in with current provider": 325,
+    "Price too high": 414,
+    "Unreachable after 3 attempts": 805,
+    "Document details did not match": 47,
+    "Visit not scheduled by sales": 296,
+    "Wrong or invalid number": 319,
+    "Only wanted a mobile plan": 280,
+    "Found paperwork too long": 79,
+    "Site not feasible for fibre": 41,
+    "Missing GST or Udyam document": 94,
+    "Authorised signatory not available": 53,
+    "First payment failed": 28,
+    "Customer cancelled before install": 53
+  }
+}

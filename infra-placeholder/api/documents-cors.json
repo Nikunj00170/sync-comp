@@ -1,0 +1,9 @@
+[
+  {
+    "AllowedOrigins": ["https://ded7l7f98x66l.cloudfront.net"],
+    "AllowedMethods": ["GET", "PUT", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 300
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "AllowOrigins": [
+    "https://ded7l7f98x66l.cloudfront.net"
+  ],
+  "AllowMethods": [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS"
+  ],
+  "AllowHeaders": [
+    "authorization",
+    "content-type"
+  ],
+  "AllowCredentials": false,
+  "MaxAge": 300
+}
