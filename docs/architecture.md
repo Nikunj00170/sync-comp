@@ -74,7 +74,7 @@ Direct DigiLocker is a consented document-retrieval path; the application must s
 
 ### 1.4 Authentication and customer ownership
 
-Use the existing Cognito pool and current web client from infra-placeholder/aws-prototype-config.json. The issuer is the cognito-idp URL, not the hosted login domain.
+Use the existing Cognito pool and current web client from infra-placeholder/aws-prototype-config.example.json. The issuer is the cognito-idp URL, not the hosted login domain.
 
 - Keep GET /health public.
 - Protect GET /auth-check and future customer routes with the JWT authorizer.

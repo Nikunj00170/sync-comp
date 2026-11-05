@@ -1,0 +1,39 @@
+{
+  "accountId": "YOUR_AWS_ACCOUNT_ID",
+  "region": "ap-south-1",
+  "frontend": {
+    "origin": "https://YOUR_CLOUDFRONT_DOMAIN",
+    "websiteBucket": "sync-prototype-YOUR_AWS_ACCOUNT_ID-web"
+  },
+  "api": {
+    "id": "YOUR_API_ID",
+    "baseUrl": "https://YOUR_API_ID.execute-api.ap-south-1.amazonaws.com",
+    "stage": "$default",
+    "functionName": "sync-prototype-api",
+    "executionRoleArn": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/sync-prototype-api-role"
+  },
+  "cognito": {
+    "userPoolId": "ap-south-1_YOUR_POOL_ID",
+    "clientId": "YOUR_PUBLIC_CLIENT_ID",
+    "issuer": "https://cognito-idp.ap-south-1.amazonaws.com/ap-south-1_YOUR_POOL_ID",
+    "domain": "https://YOUR_COGNITO_DOMAIN.auth.ap-south-1.amazoncognito.com",
+    "redirectUri": "https://YOUR_CLOUDFRONT_DOMAIN/",
+    "logoutUri": "https://YOUR_CLOUDFRONT_DOMAIN/",
+    "scopes": [
+      "openid",
+      "email"
+    ]
+  },
+  "storage": {
+    "customersTable": "sync-prototype-customers",
+    "ordersTable": "sync-prototype-orders",
+    "activityTable": "sync-prototype-activity",
+    "partitionKey": "PK",
+    "sortKey": "SK",
+    "documentsBucket": "sync-prototype-YOUR_AWS_ACCOUNT_ID-documents"
+  },
+  "featureDefaults": {
+    "voiceEnabled": false,
+    "kycMode": "mock"
+  }
+}

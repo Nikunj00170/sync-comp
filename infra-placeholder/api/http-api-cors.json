@@ -1,6 +1,6 @@
 {
   "AllowOrigins": [
-    "https://ded7l7f98x66l.cloudfront.net"
+    "https://YOUR_CLOUDFRONT_DOMAIN"
   ],
   "AllowMethods": [
     "GET",

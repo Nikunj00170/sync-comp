@@ -92,32 +92,13 @@ flowchart TB
 
 This is a production design, not deployed infrastructure or a demonstrated capacity claim. The [detailed architecture](docs/architecture.md) includes sizing assumptions, data keys, sharding, indexing, consistency, and recovery tradeoffs.
 
-## Confirmed AWS resources
+## AWS deployment configuration
 
-| Resource | Value |
-| --- | --- |
-| AWS account / Region | `851725351427` / `ap-south-1` — Mumbai |
-| Website | [CloudFront placeholder](https://ded7l7f98x66l.cloudfront.net/) |
-| API base URL | `https://t7hji7zvfd.execute-api.ap-south-1.amazonaws.com` |
-| Lambda / handler | `sync-prototype-api` / `index.handler` |
-| Execution role | `sync-prototype-api-role` |
-| Cognito user pool | `ap-south-1_ZWvI7iRNG` |
-| Web app client | `2ac0h4h8mup3cr2o35iui0i8b0` |
-| Cognito login domain | `https://ap-south-1zwvi7irng.auth.ap-south-1.amazoncognito.com` |
-| Website bucket | `sync-prototype-851725351427-web` |
-| Document bucket | `sync-prototype-851725351427-documents` |
-| DynamoDB tables | `sync-prototype-customers`, `sync-prototype-orders`, `sync-prototype-activity` |
+The prototype uses Mumbai (ap-south-1), CloudFront, private S3, API Gateway HTTP API, Lambda, Cognito and three DynamoDB tables. See [the example configuration](infra-placeholder/aws-prototype-config.example.json) for the required shape. Deployment-specific values are kept in ignored local configuration.
 
-The canonical identifier file is [aws-prototype-config.json](infra-placeholder/aws-prototype-config.json). Identifiers are configuration, not credentials.
+Verified through console tests: website HTTPS, API health, rejection of anonymous protected requests, and temporary storage write/read/delete checks. Signed-in requests, browser uploads, and application ownership checks still need integration tests.
 
-Verified through the user's console tests:
-
-- The CloudFront placeholder loads over HTTPS.
-- `GET /health` invokes Lambda successfully.
-- `GET /auth-check` rejects anonymous requests.
-- Lambda writes, reads, and deletes temporary test data in all three tables and the document bucket; all four checks and cleanup passed.
-
-Successful signed-in API access, saved scope enforcement, browser uploads, and customer ownership checks still require application integration tests. Budget notifications and final CORS/log-retention settings require console confirmation.
+Use [.env.example](.env.example) as a public template and store actual local values in ignored .env.local. Browser builds necessarily expose the API URL and public Cognito client configuration; credentials and server-only settings must never be embedded in frontend code.
 
 ## Repository contents
 
@@ -129,7 +110,7 @@ docs/
   implementation-plan.md          Development order and two-person ownership
 infra-placeholder/
   README.md                       Provisioning handoff and verification status
-  aws-prototype-config.json       Existing AWS identifiers
+  aws-prototype-config.example.json  Public configuration template
   index.html                      Website hosting test page
   api/
     index.mjs                     Tested Lambda health/storage diagnostic

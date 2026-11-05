@@ -20,3 +20,9 @@ test-results/
 *.p12
 local.properties
 .gradle/
+
+/.private-context/
+
+/AGENTS.md
+
+/infra-placeholder/aws-prototype-config.json

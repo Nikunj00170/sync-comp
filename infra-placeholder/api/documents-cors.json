@@ -1,6 +1,6 @@
 [
   {
-    "AllowedOrigins": ["https://ded7l7f98x66l.cloudfront.net"],
+    "AllowedOrigins": ["https://YOUR_CLOUDFRONT_DOMAIN"],
     "AllowedMethods": ["GET", "PUT", "HEAD"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": ["ETag"],

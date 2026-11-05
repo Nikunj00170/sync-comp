@@ -2,26 +2,26 @@
 
 Updated 6 November 2026 from the user's AWS-console reports and test output. This directory contains diagnostic placeholders and resource configuration. The actual application is not implemented.
 
-## Existing resources
+## Resource configuration template
 
-Read aws-prototype-config.json for identifiers. Regional resources are in ap-south-1 (Mumbai); CloudFront delivers public website assets.
+Read aws-prototype-config.example.json for the configuration shape; substitute your local deployment values before use. Regional resources are in ap-south-1 (Mumbai); CloudFront delivers public website assets.
 
-| Component | Current resource |
+| Component | Example / configuration |
 | --- | --- |
-| Website | https://ded7l7f98x66l.cloudfront.net/ |
-| Website S3 bucket | sync-prototype-851725351427-web |
-| HTTP API | sync-prototype-api; ID t7hji7zvfd |
-| API base | https://t7hji7zvfd.execute-api.ap-south-1.amazonaws.com |
+| Website | https://YOUR_CLOUDFRONT_DOMAIN/ |
+| Website S3 bucket | sync-prototype-YOUR_AWS_ACCOUNT_ID-web |
+| HTTP API | sync-prototype-api; ID YOUR_API_ID |
+| API base | https://YOUR_API_ID.execute-api.ap-south-1.amazonaws.com |
 | Stage | $default; automatic deployment enabled in the supplied screenshot |
 | Lambda | sync-prototype-api; index.handler |
 | Runtime settings used in walkthrough | Node.js 24, arm64, 256 MB; timeout raised to 30 seconds for the storage check |
-| Execution role | arn:aws:iam::851725351427:role/sync-prototype-api-role |
-| User pool | ap-south-1_ZWvI7iRNG |
-| Web app client | sync-prototype-web; 2ac0h4h8mup3cr2o35iui0i8b0 |
-| Login domain | https://ap-south-1zwvi7irng.auth.ap-south-1.amazoncognito.com |
+| Execution role | arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/sync-prototype-api-role |
+| User pool | ap-south-1_YOUR_POOL_ID |
+| Web app client | sync-prototype-web; YOUR_PUBLIC_CLIENT_ID |
+| Login domain | https://YOUR_COGNITO_DOMAIN.auth.ap-south-1.amazoncognito.com |
 | JWT authorizer | sync-customer-jwt |
 | Data tables | sync-prototype-customers, sync-prototype-orders, sync-prototype-activity |
-| Document bucket | sync-prototype-851725351427-documents |
+| Document bucket | sync-prototype-YOUR_AWS_ACCOUNT_ID-documents |
 | Log group | /aws/lambda/sync-prototype-api |
 
 Website and document buckets are separate. The website uses an S3 REST origin and CloudFront OAC; S3 website hosting stays disabled. The document bucket remains private and does not use the website's public distribution.
