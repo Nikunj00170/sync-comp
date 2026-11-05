@@ -1,0 +1,39 @@
+{
+  "name": "airtel-sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @sync/customer",
+    "build": "npm run typecheck && npm run build --workspace @sync/customer",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "preview": "npm run preview --workspace @sync/customer",
+    "android:sync": "npm run build && npm run android:sync --workspace @sync/customer",
+    "format": "prettier --write \"apps/customer/src/**/*.{ts,tsx,css}\" \"packages/domain/src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,ts}\" \"apps/customer/*.{ts,json,html}\"",
+    "android:open": "npm run android:open --workspace @sync/customer",
+    "android:debug": "npm run android:sync && npm run android:debug --workspace @sync/customer",
+    "check:staged": "node scripts/check-staged.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@capacitor/cli": "8.6.0",
+    "@playwright/test": "1.65.0",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "prettier": "3.9.10",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  }
+}

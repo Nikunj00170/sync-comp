@@ -4,20 +4,22 @@ This plan starts after the manually provisioned AWS foundation. Target effort sp
 
 ## Two-person ownership
 
-| Milestone | Nikunj — AWS, backend, integrations | Teammate — customer web and Android |
+| Owner | Work package | Share |
 | --- | --- | --- |
-| Foundation and identity | Resource configuration, API contracts, JWT/ownership enforcement, customer profile endpoints | React shell, responsive navigation, Cognito callback/sign-in/logout UX |
-| Discovery and quote | Catalogue/eligibility/dependency engine, integer-paise pricing, quote snapshots | Questionnaire, form validation, recommendation comparison and quote UI |
-| KYC and documents | Presigned access, provider adapters, mock registry validation, asynchronous document infrastructure | Digio/DigiLocker choice, consent flow, document picker/camera, review and processing states |
-| Orders and invoices | Order state machine, conditional updates, activity queries, consolidated invoice model and PDFs | Service tracker, progress timeline, invoice list/detail/download UX |
-| Voice | Sarvam/OpenAI adapters, domain-tool validation, credentials, session limits and backend flags | Microphone interaction, transcripts/turn display, typed fallback, disabled/coming-soon states |
-| Delivery and testing | AWS deployment, backend integration tests, resource checks, monitoring and budget review | Capacitor Android package, platform redirects/storage, emulator/device checks, UI end-to-end tests |
+| Nikunj | AWS infrastructure: CDK, S3, CloudFront, Lambda, API Gateway, DynamoDB, Cognito and permissions | 15% |
+| Nikunj | Backend foundation: API handlers, authentication, database access, document uploads and activity history | 15% |
+| Nikunj | Integrations: Textract, Digio/DigiLocker adapters, payment simulation and browser voice integration | 15% |
+| Nikunj | Deployment, monitoring, spending controls and backend security checks | 5% |
+| Teammate | Customer interface: discovery, recommendations, checkout, KYC, tracking and billing | 15% |
+| Teammate | Partner/reviewer/admin interfaces: pipeline, priorities, tasks, corrections and demo controls | 15% |
+| Teammate | Shared business logic: eligibility, bundles, quotes, order/task transitions and demo invoice calculations | 15% |
+| Teammate | Responsive design, accessibility and complete journey tests | 5% |
 
-Both owners review contracts, test the complete journey, and prepare the case demonstration. The partner application is excluded from this phase.
+Both owners review contracts and the complete customer journey. The partner application remains a later work package. The current app includes shared demo logic; Nikunj must enforce these rules in authoritative backend handlers.
 
 ## Proposed application layout
 
-These application directories are not created yet:
+The customer and domain packages now exist; backend service directories below remain planned:
 
 ```text
 apps/customer/             React + Vite customer app, Capacitor configuration and Android project
@@ -33,7 +35,7 @@ Existing shared/data/, fixtures/, case_source/, and infra-placeholder/ are ready
 
 ### 1. Establish one runnable workspace
 
-Create a coherent package/workspace setup rather than executing the archived scaffold. Pin compatible dependencies and commit the lockfile. Use Node.js 24 for backend parity. There is currently no working root app build.
+Create a coherent package/workspace setup rather than executing the archived scaffold. Pin compatible dependencies and commit the lockfile. Use Node.js 24 for backend parity. The customer workspace now builds from the root; see apps/customer/README.md for commands.
 
 Acceptance: a local customer shell builds; TypeScript contracts compile; a deliberately configured local origin/callback can authenticate against the existing pool.
 
@@ -77,7 +79,7 @@ Acceptance: the complete customer journey works on both interfaces with the same
 
 ## Work deliberately unfinished
 
-- No customer UI, Android project, APK, business API implementation, CI/CD or CDK stack.
+- Customer web UI and Android project now exist. A compiled APK, business API implementation, CI/CD and CDK stack are still outstanding.
 - No live Sarvam/OpenAI, Digio, DigiLocker or payment integration.
 - No SQS/Textract worker or secondary indexes provisioned.
 - No partner application or million-user production infrastructure.

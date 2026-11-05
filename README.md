@@ -4,7 +4,7 @@ Customer onboarding, plan discovery, smart KYC, order tracking, and one consolid
 
 We are building a customer website and an Android app from a shared React/TypeScript interface, backed by AWS. The partner application is deferred to a later phase.
 
-**Current status — 6 November 2026:** core AWS resources have been provisioned manually through the console. The deployed website and Lambda are infrastructure placeholders. The actual customer application, Android package, business APIs, and live provider integrations still need implementation.
+**Current status — 6 November 2026:** core AWS resources have been provisioned manually through the console. The deployed website and Lambda are infrastructure placeholders. The customer prototype now runs locally on web, with a generated Capacitor Android project. Business APIs and live provider integrations still need implementation. See [customer app setup](apps/customer/README.md).
 
 ## Architecture decisions
 
@@ -127,7 +127,7 @@ fixtures/kyc_documents/           47 supplied synthetic document images
 reference/initial-scaffold/       Incomplete earlier package/build configuration
 ```
 
-There is no runnable customer application at the repository root yet. The earlier scaffold references source files that were never built, so it is preserved under [reference/initial-scaffold](reference/initial-scaffold/README.md). Treat its dependency versions and commands as an unvalidated draft.
+Run the customer app with `npm ci` followed by `npm run dev` from the repository root. The earlier scaffold references source files that were never built, so it is preserved under [reference/initial-scaffold](reference/initial-scaffold/README.md). Treat its dependency versions and commands as an unvalidated draft.
 
 ## How to use the current files
 
@@ -153,7 +153,7 @@ For AWS testing, copy that file into the existing Lambda's `index.mjs` and deplo
 
 It performs reversible test writes/reads/deletes. Normal HTTP API events cannot select this diagnostic branch. Do not add a public storage-check route.
 
-Use [.env.example](.env.example) as the intended configuration contract when implementing the app. It is not currently loaded by an application. API keys remain blank and server-side; all `VITE_*` settings are public build configuration.
+The customer build loads ignored root `.env.local` configuration based on [.env.example](.env.example). API keys remain blank and server-side; all `VITE_*` settings are public build configuration.
 
 ## Data and demo boundaries
 

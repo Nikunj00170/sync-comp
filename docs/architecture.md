@@ -25,7 +25,7 @@ Current delivery: a responsive customer website and an Android package sharing t
 | Operations | CloudWatch, request throttling, budget alerts, manual AWS-console provisioning initially |
 | Repeatable infrastructure | CDK later, after importing/adopting the existing resources |
 
-These are intended tools, not an installed or validated dependency manifest. The archived initial package draft is not the current runnable app.
+The React/Vite/Capacitor customer workspace and shared domain package are now installed and buildable; see apps/customer/README.md. Backend services and production systems below remain the intended architecture.
 
 ### 1.2 Prototype topology
 

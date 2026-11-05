@@ -9,7 +9,7 @@ These JSON files were prepared from the supplied case pack during brainstorming.
 | mock_udyam_registry.json | 2,723 fictional Udyam registry records |
 | historical.json | Segment and funnel/drop-reason summary derived from the 5,000 fictional leads |
 
-Prices in the prepared catalogue are rupee-valued fixture inputs. Convert them deliberately to integer paise at the backend pricing boundary and label the chosen demo pricing version.
+Prices and setup fees in the prepared catalogue are already integer paise (99900 means ₹999). Do not multiply them by 100 again. The shared domain package uses the case-2026-07-v1 pricing version.
 
 Mock registries belong on the backend; do not bundle the full registry or lead file into the customer website. The catalogue can have a deliberately selected public response.
 
