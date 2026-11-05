@@ -5,6 +5,7 @@ import {
   catalogue,
   eligibility,
   initialWorkspace,
+  localDateTime,
   makeInvoice,
   makeOrder,
   money,
@@ -145,4 +146,34 @@ describe('order and invoice lifecycle', () => {
     for (const i of w.invoices) expect(i.total).toBe(i.subtotal + i.tax);
     expect(quote(w.orders[1].lines, w.profile).errors).toEqual([]);
   });
+});
+
+it('round-trips installation times through local-clock inputs', () => {
+  const date = new Date('2026-11-09T07:15:00.000Z');
+  expect(new Date(localDateTime(date)).getTime()).toBe(date.getTime());
+  expect(localDateTime('not-a-date')).toBe('');
+});
+
+it('generates a valid multi-page PDF for a large consolidated invoice', async () => {
+  const { invoicePdf } = await import('../apps/customer/src/lib/downloads');
+  const { PDFDocument } = await import('pdf-lib');
+  const p = { ...profile, employees: 1000, sites: 100, tier: 1, hasGstin: true };
+  const invoice = makeInvoice(
+    catalogue.map((product) => ({ productId: product.id, quantity: 1 })),
+    p,
+    'November 2026',
+  );
+  const bytes = await invoicePdf(invoice, p);
+  const pdf = await PDFDocument.load(bytes);
+  expect(pdf.getPageCount()).toBeGreaterThan(1);
+  for (const page of pdf.getPages()) expect(page.getHeight()).toBe(842);
+});
+
+it('keeps invoice billing details fixed after account changes', () => {
+  const account = { ...profile };
+  const invoice = makeInvoice([{ productId: 'P01', quantity: 1 }], account, 'November 2026');
+  account.business = 'Renamed business';
+  account.address = 'A different address';
+  expect(invoice.billedTo?.business).toBe(profile.business);
+  expect(invoice.billedTo?.address).toBe(profile.address);
 });

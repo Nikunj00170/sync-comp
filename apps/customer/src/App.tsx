@@ -87,11 +87,12 @@ export default function App() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const listener = import('@capacitor/app').then(({ App }) =>
-      App.addListener('backButton', () => {
+      App.addListener('backButton', ({ canGoBack }) => {
         if (document.querySelector('[role=dialog]')) {
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         } else if (location.pathname !== '/') {
-          navigate(-1);
+          if (canGoBack) navigate(-1);
+          else navigate('/');
         } else {
           App.minimizeApp();
         }

@@ -121,7 +121,11 @@ test('all customer routes fit the viewport and remain usable on mobile', async (
       () => document.documentElement.scrollWidth > window.innerWidth + 1,
     );
     expect(overflow, `${route} must not overflow the viewport`).toBe(false);
-    if(route==='')await page.screenshot({path:`test-results/customer-${info.project.name}.png`,fullPage:true});
+    if (route === '')
+      await page.screenshot({
+        path: `test-results/customer-${info.project.name}.png`,
+        fullPage: true,
+      });
   }
   if (info.project.name === 'mobile') {
     await page.getByRole('button', { name: 'Open navigation' }).click();
@@ -150,4 +154,35 @@ test('customer pages expose accessible controls and readable content', async ({ 
       route,
     ).toEqual([]);
   }
+});
+
+test('rescheduling preserves India local time in the calendar and cancellation persists', async ({
+  page,
+}) => {
+  await page.goto('/#/orders/SYNC-20846');
+  await page.getByRole('button', { name: 'Change demo slot' }).click();
+  const day = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(Date.now() + 7 * 86400000);
+  await page.getByLabel('Installation date and time').fill(day + 'T15:30');
+  await page.getByRole('button', { name: 'Save demo slot' }).click();
+  await expect(page.locator('.appointment-card > p')).toContainText('3:30');
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Add to calendar' }).click();
+  const file = await downloading;
+  expect(await readFile((await file.path())!, 'utf8')).toContain(
+    'DTSTART:' + day.replaceAll('-', '') + 'T100000Z',
+  );
+  await page.getByRole('button', { name: 'Cancel demo order', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Cancel demo order', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Simulate next milestone' })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Simulate next milestone' })).toBeDisabled();
+  await expect(page.locator('.page-heading > .badge')).toHaveText('Cancelled');
 });

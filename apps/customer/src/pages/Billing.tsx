@@ -248,7 +248,7 @@ export default function Billing() {
                 <h3>{detail.id}</h3>
                 <p>{detail.period}</p>
               </div>
-              <span>{data.profile.business}</span>
+              <span>{detail.billedTo?.business || data.profile.business}</span>
             </div>
             {detail.lines.map((l) => {
               const p = productById(l.productId)!;

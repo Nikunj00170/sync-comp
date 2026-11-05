@@ -5,6 +5,7 @@ export default defineConfig({
   timeout: 45000,
   use: {
     baseURL: 'http://127.0.0.1:5173',
+    timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     channel: 'chrome',

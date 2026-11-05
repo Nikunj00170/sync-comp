@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   cancelOrder,
+  localDateTime,
   money,
   nextOrder,
   orderSteps,
@@ -198,7 +199,7 @@ export default function Orders() {
                 <button
                   className="button secondary full"
                   onClick={() => {
-                    setSlot(order.slot);
+                    setSlot(localDateTime(order.slot));
                     setReschedule(true);
                   }}
                 >
@@ -267,7 +268,7 @@ export default function Orders() {
               <input
                 type="datetime-local"
                 value={slot}
-                min={new Date().toISOString().slice(0, 16)}
+                min={localDateTime()}
                 onChange={(e) => setSlot(e.target.value)}
               />
             </label>
@@ -281,7 +282,7 @@ export default function Orders() {
                     x.id === id
                       ? {
                           ...x,
-                          slot,
+                          slot: new Date(slot).toISOString(),
                           events: [
                             ...x.events,
                             {

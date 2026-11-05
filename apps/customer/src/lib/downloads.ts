@@ -35,7 +35,7 @@ export async function download(blob: Blob, name: string) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
-export async function downloadInvoice(invoice: Invoice, profile: Profile) {
+export async function invoicePdf(invoice: Invoice, profile: Profile) {
   const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
   const pdf = await PDFDocument.create();
   let page = pdf.addPage([595, 842]);
@@ -76,11 +76,12 @@ export async function downloadInvoice(invoice: Invoice, profile: Profile) {
     text('Fictional case catalogue. No real service or payment.', 40, 54, 9);
   };
   header();
-  text(profile.business.slice(0, 65), 40, 640, 14, true);
-  wrap(profile.name + ' | ' + profile.email, 85)
+  const billedTo = invoice.billedTo || profile;
+  text(billedTo.business.slice(0, 65), 40, 640, 14, true);
+  wrap(billedTo.name + ' | ' + billedTo.email, 85)
     .slice(0, 2)
     .forEach((s, i) => text(s, 40, 618 - i * 14, 10));
-  wrap(profile.address, 90)
+  wrap(billedTo.address, 90)
     .slice(0, 3)
     .forEach((s, i) => text(s, 40, 585 - i * 14, 10));
   let y = 510;
@@ -124,7 +125,11 @@ export async function downloadInvoice(invoice: Invoice, profile: Profile) {
   text('Due: ' + new Date(invoice.dueAt).toLocaleDateString('en-IN'), 40, y - 40, 10);
   if (invoice.paymentReference) text('Demo payment: ' + invoice.paymentReference, 40, 110, 10);
   footer();
-  const bytes = await pdf.save();
+  return pdf.save();
+}
+
+export async function downloadInvoice(invoice: Invoice, profile: Profile) {
+  const bytes = await invoicePdf(invoice, profile);
   await download(
     new Blob([new Uint8Array(bytes).buffer], { type: 'application/pdf' }),
     invoice.id + '.pdf',

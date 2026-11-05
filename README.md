@@ -165,11 +165,11 @@ Recommendations must use server-side rules and versioned quotes. Voice can colle
 
 ## Next development steps
 
-1. Create the React/TypeScript customer app and TypeScript backend workspace.
+1. Implement the authoritative TypeScript backend behind the working customer prototype.
 2. Implement Cognito callback handling, PKCE, access-token requests, refresh, logout, and ownership checks.
-3. Build the questionnaire, catalogue rules, recommendations, and versioned quotes.
-4. Add private uploads and both labelled mock KYC provider paths.
-5. Implement orders, service-level tracking, consolidated invoice metadata, and demo PDFs.
+3. Enforce the shared catalogue rules and versioned quotes on the server.
+4. Connect private uploads and both KYC provider adapters to the existing mock UI.
+5. Persist orders, service-level tracking and consolidated invoice snapshots behind the current customer screens.
 6. Add the asynchronous document worker and Textract infrastructure.
 7. Integrate browser voice behind disabled-by-default UI/backend flags, then enable only for limited credential-backed demos.
 8. Package Android with Capacitor; configure its separate public Cognito client and platform callback.

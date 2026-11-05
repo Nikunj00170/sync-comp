@@ -96,6 +96,7 @@ export type Invoice = {
   tax: number;
   total: number;
   paymentReference?: string;
+  billedTo?: Pick<Profile, 'name' | 'business' | 'email' | 'address'>;
 };
 export type DocumentMeta = {
   id: string;
@@ -350,6 +351,12 @@ export function makeInvoice(lines: CartLine[], profile: Profile, period: string)
     issuedAt: new Date().toISOString(),
     dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
     status: 'unpaid',
+    billedTo: {
+      name: profile.name,
+      business: profile.business,
+      email: profile.email,
+      address: profile.address,
+    },
     lines: q.lines.map((line) => {
       const p = productById(line.productId)!;
       return { ...line, name: p.name, unitPrice: p.price, category: p.category, unit: p.unit };
@@ -416,7 +423,7 @@ export function initialWorkspace(): Workspace {
     lines: pendingLines,
     quote: quote(pendingLines, profile),
     address: profile.address,
-    slot: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 16),
+    slot: new Date(Date.now() + 2 * 86400000).toISOString(),
     events: orderSteps.slice(0, 4).map((s, i) => ({
       label: statusLabels[s],
       detail: 'Sample installation progress.',
@@ -473,4 +480,11 @@ export function initialWorkspace(): Workspace {
     preferences: { emailUpdates: true, reminders: true, compactMotion: false },
     draftStep: 0,
   };
+}
+
+export function localDateTime(value: string | number | Date = Date.now()): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
