@@ -94,7 +94,7 @@ This is a production design, not deployed infrastructure or a demonstrated capac
 
 ## AWS deployment configuration
 
-The prototype uses Mumbai (ap-south-1), CloudFront, private S3, API Gateway HTTP API, Lambda, Cognito and three DynamoDB tables. See [the example configuration](infra-placeholder/aws-prototype-config.example.json) for the required shape. Deployment-specific values are kept in ignored local configuration.
+The prototype uses Mumbai (ap-south-1), CloudFront, private S3, API Gateway HTTP API, Lambda, Cognito and three DynamoDB tables. See [the example configuration](infra-placeholder/aws-prototype-config.example.json) for the required shape. All deployment-specific identifiers and resource names are represented by `YOUR_*` placeholders. Replace them with values from ignored local configuration before use.
 
 Verified through console tests: website HTTPS, API health, rejection of anonymous protected requests, and temporary storage write/read/delete checks. Signed-in requests, browser uploads, and application ownership checks still need integration tests.
 

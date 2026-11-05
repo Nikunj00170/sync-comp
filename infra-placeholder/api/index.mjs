@@ -6,7 +6,7 @@ const healthResponse = () => ({
   },
   body: JSON.stringify({
     status: "ok",
-    service: "sync-prototype-api",
+    service: "infrastructure-test-api",
     mode: "infrastructure-test",
   }),
 });

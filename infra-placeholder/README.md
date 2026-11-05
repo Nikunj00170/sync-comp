@@ -4,25 +4,25 @@ Updated 6 November 2026 from the user's AWS-console reports and test output. Thi
 
 ## Resource configuration template
 
-Read aws-prototype-config.example.json for the configuration shape; substitute your local deployment values before use. Regional resources are in ap-south-1 (Mumbai); CloudFront delivers public website assets.
+Read aws-prototype-config.example.json for the configuration shape; Replace every `YOUR_*` placeholder with local deployment values before use, including those in the CORS examples. The templates are not deployable as-is. Regional resources are in ap-south-1 (Mumbai); CloudFront delivers public website assets.
 
 | Component | Example / configuration |
 | --- | --- |
 | Website | https://YOUR_CLOUDFRONT_DOMAIN/ |
-| Website S3 bucket | sync-prototype-YOUR_AWS_ACCOUNT_ID-web |
-| HTTP API | sync-prototype-api; ID YOUR_API_ID |
-| API base | https://YOUR_API_ID.execute-api.ap-south-1.amazonaws.com |
+| Website S3 bucket | YOUR_WEBSITE_BUCKET |
+| HTTP API | YOUR_LAMBDA_FUNCTION_NAME; ID YOUR_API_ID |
+| API base | https://YOUR_API_ID.execute-api.YOUR_AWS_REGION.amazonaws.com |
 | Stage | $default; automatic deployment enabled in the supplied screenshot |
-| Lambda | sync-prototype-api; index.handler |
+| Lambda | YOUR_LAMBDA_FUNCTION_NAME; index.handler |
 | Runtime settings used in walkthrough | Node.js 24, arm64, 256 MB; timeout raised to 30 seconds for the storage check |
-| Execution role | arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/sync-prototype-api-role |
-| User pool | ap-south-1_YOUR_POOL_ID |
-| Web app client | sync-prototype-web; YOUR_PUBLIC_CLIENT_ID |
-| Login domain | https://YOUR_COGNITO_DOMAIN.auth.ap-south-1.amazoncognito.com |
-| JWT authorizer | sync-customer-jwt |
-| Data tables | sync-prototype-customers, sync-prototype-orders, sync-prototype-activity |
-| Document bucket | sync-prototype-YOUR_AWS_ACCOUNT_ID-documents |
-| Log group | /aws/lambda/sync-prototype-api |
+| Execution role | arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE |
+| User pool | YOUR_AWS_REGION_YOUR_POOL_ID |
+| Web app client | YOUR_WEB_APP_CLIENT_NAME; YOUR_PUBLIC_CLIENT_ID |
+| Login domain | https://YOUR_COGNITO_DOMAIN.auth.YOUR_AWS_REGION.amazoncognito.com |
+| JWT authorizer | YOUR_JWT_AUTHORIZER_NAME |
+| Data tables | YOUR_CUSTOMERS_TABLE, YOUR_ORDERS_TABLE, YOUR_ACTIVITY_TABLE |
+| Document bucket | YOUR_DOCUMENTS_BUCKET |
+| Log group | /aws/lambda/YOUR_LAMBDA_FUNCTION_NAME |
 
 Website and document buckets are separate. The website uses an S3 REST origin and CloudFront OAC; S3 website hosting stays disabled. The document bucket remains private and does not use the website's public distribution.
 
@@ -67,7 +67,7 @@ Relevant builder policies added during setup:
 
 The group may still have the earlier Cognito, CloudFront, role-listing and password policies. Inspect IAM for the authoritative attachment list.
 
-The execution role has AmazonDynamoDBFullAccess and AmazonS3FullAccess, plus its inline SyncPrototypeApiLogs policy. Builder-group permissions alone do not grant runtime access to Lambda.
+The execution role has AmazonDynamoDBFullAccess and AmazonS3FullAccess, plus its inline YOUR_LAMBDA_LOG_POLICY_NAME policy. Builder-group permissions alone do not grant runtime access to Lambda.
 
 Superseded custom Lambda/API Gateway setup JSON files are intentionally excluded from this handoff.
 

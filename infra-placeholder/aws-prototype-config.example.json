@@ -1,22 +1,22 @@
 {
   "accountId": "YOUR_AWS_ACCOUNT_ID",
-  "region": "ap-south-1",
+  "region": "YOUR_AWS_REGION",
   "frontend": {
     "origin": "https://YOUR_CLOUDFRONT_DOMAIN",
-    "websiteBucket": "sync-prototype-YOUR_AWS_ACCOUNT_ID-web"
+    "websiteBucket": "YOUR_WEBSITE_BUCKET"
   },
   "api": {
     "id": "YOUR_API_ID",
-    "baseUrl": "https://YOUR_API_ID.execute-api.ap-south-1.amazonaws.com",
+    "baseUrl": "https://YOUR_API_ID.execute-api.YOUR_AWS_REGION.amazonaws.com",
     "stage": "$default",
-    "functionName": "sync-prototype-api",
-    "executionRoleArn": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/sync-prototype-api-role"
+    "functionName": "YOUR_LAMBDA_FUNCTION_NAME",
+    "executionRoleArn": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE"
   },
   "cognito": {
-    "userPoolId": "ap-south-1_YOUR_POOL_ID",
+    "userPoolId": "YOUR_AWS_REGION_YOUR_POOL_ID",
     "clientId": "YOUR_PUBLIC_CLIENT_ID",
-    "issuer": "https://cognito-idp.ap-south-1.amazonaws.com/ap-south-1_YOUR_POOL_ID",
-    "domain": "https://YOUR_COGNITO_DOMAIN.auth.ap-south-1.amazoncognito.com",
+    "issuer": "https://cognito-idp.YOUR_AWS_REGION.amazonaws.com/YOUR_AWS_REGION_YOUR_POOL_ID",
+    "domain": "https://YOUR_COGNITO_DOMAIN.auth.YOUR_AWS_REGION.amazoncognito.com",
     "redirectUri": "https://YOUR_CLOUDFRONT_DOMAIN/",
     "logoutUri": "https://YOUR_CLOUDFRONT_DOMAIN/",
     "scopes": [
@@ -25,12 +25,12 @@
     ]
   },
   "storage": {
-    "customersTable": "sync-prototype-customers",
-    "ordersTable": "sync-prototype-orders",
-    "activityTable": "sync-prototype-activity",
+    "customersTable": "YOUR_CUSTOMERS_TABLE",
+    "ordersTable": "YOUR_ORDERS_TABLE",
+    "activityTable": "YOUR_ACTIVITY_TABLE",
     "partitionKey": "PK",
     "sortKey": "SK",
-    "documentsBucket": "sync-prototype-YOUR_AWS_ACCOUNT_ID-documents"
+    "documentsBucket": "YOUR_DOCUMENTS_BUCKET"
   },
   "featureDefaults": {
     "voiceEnabled": false,
