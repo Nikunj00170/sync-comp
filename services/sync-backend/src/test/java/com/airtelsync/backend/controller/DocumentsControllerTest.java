@@ -45,17 +45,19 @@ class DocumentsControllerTest {
             .contentType("application/pdf").content("test")).andExpect(status().isNoContent());
         mvc.perform(post("/v1/documents/" + id + "/complete").header("Authorization", auth)).andExpect(status().isOk());
     }
-    @Test void twoUploadsAndConsentEnableOnlyDemoVerification() throws Exception {
+    @Test void arbitraryUploadsAndConsentCannotBypassDocumentChecks() throws Exception {
         String first = reserve();
         mvc.perform(post("/v1/documents/" + first + "/complete").header("Authorization", auth))
             .andExpect(status().isConflict());
         upload(first); upload(reserve());
+        mvc.perform(put("/v1/me").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+            .content(ProfileControllerTest.BODY)).andExpect(status().isOk());
         mvc.perform(post("/v1/kyc/demo-verification").header("Authorization", auth)).andExpect(status().isConflict());
         mvc.perform(put("/v1/kyc").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
             .content("{\"provider\":\"digio\",\"consent\":true}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("pending"));
         mvc.perform(post("/v1/kyc/demo-verification").header("Authorization", auth))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("demo_verified"));
+            .andExpect(status().isConflict());
         mvc.perform(put("/v1/kyc").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
             .content("{\"provider\":\"digio\",\"consent\":false}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("pending"));
@@ -112,12 +114,31 @@ class DocumentsControllerTest {
         mvc.perform(post("/v1/documents/" + id + "/complete").header("Authorization", auth)).andExpect(status().isNotFound());
         for (int i = 0; i < 8; i++) reserve();
     }
+    void uploadSpecimens() throws Exception {
+        for (String kind : new String[]{"gst_certificate", "address_proof", "signatory_id"}) {
+            String name = "K05_" + kind + ".png";
+            byte[] bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of("../../case_source/kyc_documents/" + name));
+            String response = mvc.perform(post("/v1/documents/uploads").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"" + name + "\",\"type\":\"image/png\",\"size\":" + bytes.length + "}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            String id = json.readTree(response).get("documentId").asText();
+            mvc.perform(put("/v1/documents/" + id + "/content").header("Authorization", auth)
+                .contentType("image/png").content(bytes)).andExpect(status().isNoContent());
+            mvc.perform(post("/v1/documents/" + id + "/complete").header("Authorization", auth)).andExpect(status().isOk());
+        }
+    }
     @Test void completeCustomerJourneyKeepsInvoiceSnapshotAfterProfileChanges() throws Exception {
         mvc.perform(put("/v1/me").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
-            .content(ProfileControllerTest.BODY)).andExpect(status().isOk());
-        upload(reserve()); upload(reserve());
+            .content(ProfileControllerTest.BODY.replace("Example Studio", "Balaji Realty LLP"))).andExpect(status().isOk());
+        uploadSpecimens();
         mvc.perform(put("/v1/kyc").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
             .content("{\"provider\":\"digilocker\",\"consent\":true}")).andExpect(status().isOk());
+        mvc.perform(post("/v1/kyc/assessment").header("Authorization", auth)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("ready"));
+        mvc.perform(post("/v1/registries/lookup").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"kind\":\"gstin\",\"identifier\":\"32TZAXB5481U1Z1\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("Active"))
+            .andExpect(jsonPath("$.businessMatches").value(true)).andExpect(jsonPath("$.identifier").doesNotExist());
         mvc.perform(post("/v1/kyc/demo-verification").header("Authorization", auth)).andExpect(status().isOk());
         mvc.perform(get("/v1/recommendations").header("Authorization", auth))
             .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(3));
@@ -127,7 +148,7 @@ class DocumentsControllerTest {
         mvc.perform(put("/v1/me").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
             .content(ProfileControllerTest.BODY.replace("Example Studio", "Changed Business"))).andExpect(status().isOk());
         mvc.perform(get("/v1/invoices").header("Authorization", auth)).andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].billedTo.business").value("Example Studio"))
+            .andExpect(jsonPath("$[0].billedTo.business").value("Balaji Realty LLP"))
             .andExpect(jsonPath("$[0].total").value(117882));
     }
 }

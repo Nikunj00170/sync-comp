@@ -25,12 +25,12 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/#/account');
   await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
-  await page.getByLabel('Business name', { exact: true }).fill('Connected Studio');
+  await page.getByLabel('Business name', { exact: true }).fill('Balaji Realty LLP');
   await page.getByLabel('Your name', { exact: true }).fill('Cloud Customer');
   await page.getByLabel('Email address', { exact: true }).fill('contact@example.com');
   await page.getByLabel('City', { exact: true }).fill('Bengaluru');
   await page.getByLabel('Team size', { exact: true }).fill('8');
-  await page.getByLabel('Business address', { exact: true }).fill('24 Studio Road, Bengaluru');
+  await page.getByLabel('Business address', { exact: true }).fill('Shop/Unit 38, Civil Lines, Kochi, Kerala - 752083');
   await page.getByRole('checkbox', { name: 'productivity', exact: true }).check();
   await page.getByRole('button', { name: 'Save profile', exact: true }).click();
   await expect(
@@ -39,7 +39,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   const saved = await context.request.get(api + '/v1/me', {
     headers: { Authorization: 'Bearer ' + user.access_token },
   });
-  expect((await saved.json()).business).toBe('Connected Studio');
+  expect((await saved.json()).business).toBe('Balaji Realty LLP');
   await page.goto('/#/discover');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -56,24 +56,16 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
   await expect(
-    page.getByRole('checkbox', { name: /I consent to this simulated verification/ }),
+    page.getByRole('checkbox', { name: /I consent to OCR extraction/ }),
   ).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Use sample documents' })).toBeHidden();
   await page.getByLabel('Add verification documents').setInputFiles([
-    {
-      name: 'business.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from('%PDF-1.7\nLocal test registration'),
-    },
-    {
-      name: 'address.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from('%PDF-1.7\nLocal test address'),
-    },
+    'case_source/kyc_documents/K05_gst_certificate.png',
+    'case_source/kyc_documents/K05_address_proof.png',
+    'case_source/kyc_documents/K05_signatory_id.png',
   ]);
-  await expect(page.getByText('business.pdf', { exact: true })).toBeVisible();
-  await expect(page.getByText('address.pdf', { exact: true })).toBeVisible();
-  const consent = page.getByRole('checkbox', { name: /I consent to this simulated verification/ });
+  await expect(page.getByText('K05_signatory_id.png', { exact: true })).toBeVisible();
+  const consent = page.getByRole('checkbox', { name: /I consent to OCR extraction/ });
   await expect(consent).toBeEnabled();
   await consent.check();
   await expect(page.getByRole('button', { name: 'Complete demo verification' })).toBeEnabled();
@@ -174,7 +166,7 @@ test('Hindi controls preserve canonical API fields and cloud records', async ({ 
   await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
   await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('hi');
   await page.getByLabel('व्यवसाय का नाम', { exact: true }).fill('नया सुरक्षित व्यवसाय');
-  await page.getByLabel('उद्योग', { exact: true }).selectOption('retail');
+  await page.getByRole('combobox', { name: 'उद्योग', exact: true }).selectOption('retail');
   const save = page.getByRole('button', { name: 'प्रोफ़ाइल सहेजें', exact: true });
   if (info.project.name === 'mobile') await save.tap(); else await save.click();
   await expect(page.getByText('आपका व्यावसायिक प्रोफ़ाइल खाते में सहेजा गया।', { exact: true })).toBeVisible();

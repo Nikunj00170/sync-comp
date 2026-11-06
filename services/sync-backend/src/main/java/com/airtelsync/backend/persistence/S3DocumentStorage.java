@@ -37,6 +37,13 @@ public class S3DocumentStorage implements DocumentStorage {
         headers.put("if-none-match", "*");
         return new Upload(signed.url().toExternalForm(), Map.copyOf(headers));
     }
+    public byte[] read(String key) {
+        try (var input = client.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build())) {
+            byte[] bytes = input.readNBytes(10 * 1024 * 1024 + 1);
+            if (bytes.length > 10 * 1024 * 1024) throw ApiException.conflict("Document is too large for extraction.");
+            return bytes;
+        } catch (java.io.IOException ex) { throw new IllegalStateException("Document extraction unavailable", ex); }
+    }
     public void delete(String key) { client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()); }
     public void verify(String key, String type, long size) {
         try {

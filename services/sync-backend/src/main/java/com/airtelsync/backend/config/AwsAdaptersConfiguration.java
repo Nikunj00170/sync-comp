@@ -15,6 +15,11 @@ public class AwsAdaptersConfiguration {
         return ClientOverrideConfiguration.builder().apiCallTimeout(Duration.ofSeconds(10))
             .apiCallAttemptTimeout(Duration.ofSeconds(4)).build();
     }
+    @Bean @ConditionalOnProperty(name = "sync.kyc.ocr", havingValue = "textract")
+    software.amazon.awssdk.services.textract.TextractClient textractClient() {
+        return software.amazon.awssdk.services.textract.TextractClient.builder()
+            .httpClientBuilder(UrlConnectionHttpClient.builder()).overrideConfiguration(timeouts()).build();
+    }
     @Bean @ConditionalOnProperty(name = "sync.storage", havingValue = "dynamodb")
     DynamoDbClient dynamoDbClient() {
         return DynamoDbClient.builder().httpClientBuilder(UrlConnectionHttpClient.builder())

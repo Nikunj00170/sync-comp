@@ -10,6 +10,7 @@ export default defineConfig({
     channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: process.env.SYNC_RECORD_DEMO === 'true' ? 'on' : 'off',
   },
   projects: [
     {

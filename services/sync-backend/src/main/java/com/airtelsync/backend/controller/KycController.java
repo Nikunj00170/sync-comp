@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/v1/kyc")
 public class KycController {
     private final CustomerKycService kyc;
-    public KycController(CustomerKycService kyc) { this.kyc = kyc; }
+    private final com.airtelsync.backend.application.SmartKycService smart;
+    public KycController(CustomerKycService kyc, com.airtelsync.backend.application.SmartKycService smart) { this.kyc = kyc; this.smart = smart; }
+    @PostMapping("/assessment") public com.airtelsync.backend.domain.kyc.KycChecks.Assessment assessment(@AuthenticationPrincipal Jwt jwt) { return smart.assess(jwt.getSubject()); }
     @GetMapping public Kyc get(@AuthenticationPrincipal Jwt jwt) { return kyc.get(jwt.getSubject()); }
     @PutMapping public Kyc consent(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody KycRequest request) {
         return kyc.consent(jwt.getSubject(), request.provider(), request.consent());

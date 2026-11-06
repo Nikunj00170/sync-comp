@@ -18,6 +18,9 @@ import { makeId, type DocumentMeta } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useAction } from '../lib/actions';
 import { useNotify } from '../lib/feedback';
+import { customerApi } from '../lib/api';
+import { accessToken } from '../lib/auth';
+import { kycMessages } from '../lib/kycMessages';
 export default function Verification() {
   const { t, locale } = useI18n();
   const {
@@ -31,6 +34,7 @@ export default function Verification() {
       reservations,
     } = useWorkspace(),
     notify = useNotify();
+  const [assessment, setAssessment] = useState<Awaited<ReturnType<typeof customerApi.assessKyc>> | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const k = data.kyc;
   const [consentDraft, setConsentDraft] = useState<boolean | undefined>();
@@ -50,6 +54,11 @@ export default function Verification() {
   }
   function verify() {
     void run(async () => {
+      if (cloud) {
+        const result = await customerApi.assessKyc(await accessToken());
+        setAssessment(result);
+        if (result.status !== 'ready') return;
+      }
       await verifyKyc();
       notify(t("Demo verification complete. Your next step is ready."));
     });
@@ -57,7 +66,7 @@ export default function Verification() {
   return (
     <>
       {cloud && (
-        <p className="notice">{t("Files are uploaded privately. Verification is a simulation and requires the backend demo setting.")}</p>
+        <p className="notice">{t("Smart KYC extracts uploaded documents and checks synthetic registries as of 15 July 2026. This is not live government verification.")}</p>
       )}
       {cloud && reservations.some((doc) => doc.status !== 'uploaded') && (
         <section className="panel">
@@ -217,7 +226,7 @@ export default function Verification() {
                 <strong>{t("Drop your files here, or browse")}</strong>
                 <span>{t("PDF, JPG or PNG · Up to 10 MB each")}</span>
               </button>
-              <p className="muted small">{t("Demo mode saves file names and sizes on this device. File contents are not stored or sent to a provider.")}</p>
+              <p className="muted small">{t(cloud ? "Cloud mode uploads private file contents. Delete them here when no longer needed." : "Demo mode saves file names and sizes on this device. File contents are not stored or sent to a provider.")}</p>
               <div className="document-list">
                 {k.documents.map((d) => (
                   <div key={d.id}>
@@ -227,7 +236,7 @@ export default function Verification() {
                     <span>
                       <strong>{d.name}</strong>
                       <small>
-                        {Math.max(1, Math.round(d.size / 1024))}{t(" KB · Demo details saved")}</small>
+                        {Math.max(1, Math.round(d.size / 1024))}{t(cloud ? " KB · Uploaded privately" : " KB · Demo details saved")}</small>
                     </span>
                     <button
                       className="icon-button"
@@ -261,8 +270,15 @@ export default function Verification() {
                     });
                   }}
                 />
-                <span>{t("I consent to this simulated verification of the document details in my demo workspace. I understand this does not verify my identity with a live provider.")}</span>
+                <span>{t(cloud ? "I consent to OCR extraction and synthetic registry checks of these documents to assess business onboarding. Delete documents here to withdraw them. This does not verify identity with a live provider." : "I consent to this simulated verification of the document details in my demo workspace. I understand this does not verify my identity with a live provider.")}</span>
               </label>
+              {cloud && assessment && <div className="notice" role="status">
+                <strong>{t(assessment.status === 'ready' ? 'Document checks passed' : 'Documents need review')}</strong>
+                <ul>{assessment.issues.map(issue => <li key={issue}>{t(kycMessages[issue] || issue)}</li>)}
+                {assessment.documents.map(doc => <li key={doc.documentId}>
+                  {k.documents.find(item => item.id === doc.documentId)?.name}: {doc.maskedIdentifier} {doc.issues.length ? doc.issues.map(issue => t(kycMessages[issue] || issue)).join(' · ') : t('Document checks passed')}
+                </li>)}</ul>
+              </div>}
               <button
                 className="button primary"
                 disabled={busy || !k.provider || !k.consent || k.documents.length < 2}

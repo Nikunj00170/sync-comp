@@ -1,8 +1,8 @@
-# Build context: repository root. No resources are provisioned by this Dockerfile.
+# Build: docker build -f services/sync-backend/Dockerfile.lambda -t sync-backend-lambda .
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 COPY services/sync-backend services/sync-backend
-COPY shared/data/catalogue.json shared/data/catalogue.json
+COPY shared/data/catalogue.json shared/data/mock_gstin_registry.json shared/data/mock_udyam_registry.json shared/data/kyc-ocr-fixtures.json shared/data/
 WORKDIR /workspace/services/sync-backend
 RUN chmod +x mvnw && ./mvnw --batch-mode -DskipTests package
 
@@ -10,13 +10,7 @@ FROM eclipse-temurin:21-jre
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
 WORKDIR /app
 COPY --from=build /workspace/services/sync-backend/target/sync-backend-0.0.1-SNAPSHOT.jar app.jar
-# Lambda has a read-only filesystem except /tmp. No Node handler is used.
-ENV SPRING_PROFILES_ACTIVE=aws \
-    SERVER_PORT=8080 \
-    AWS_LWA_PORT=8080 \
-    AWS_LWA_READINESS_CHECK_PATH=/health \
-    AWS_LWA_ASYNC_INIT=true \
-    JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=/tmp"
+ENV AWS_LWA_PORT=8080 AWS_LWA_READINESS_CHECK_PATH=/health AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 AWS_LWA_ASYNC_INIT=true
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

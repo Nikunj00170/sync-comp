@@ -1,0 +1,20 @@
+export const kycMessages: Record<string, string> = {
+  "DUPLICATE_DOCUMENT_KIND": "Upload one document of each required kind.",
+  "UNREADABLE_OR_UNSUPPORTED_DOCUMENT": "Document unreadable or unsupported; upload a clear image for review.",
+  "BUSINESS_NAME_MISMATCH": "Document business name does not match your profile.",
+  "GSTIN_FORMAT_OR_CHECKSUM": "GSTIN format or checksum could not be validated.",
+  "GSTIN_NOT_FOUND": "GSTIN was not found in the synthetic registry.",
+  "GSTIN_NOT_ACTIVE": "GST registration is cancelled or suspended.",
+  "REGISTRY_NAME_MISMATCH": "Document name does not match the registration.",
+  "REGISTRY_ADDRESS_MISMATCH": "Document address does not match the registration.",
+  "UDYAM_NOT_FOUND_OR_UNREADABLE": "Udyam number is unreadable or absent from the synthetic registry.",
+  "ADDRESS_PROOF_DATE_OUTSIDE_90_DAYS": "Address proof must be dated within the last 90 days.",
+  "SIGNATORY_ID_EXPIRED": "Signatory identity document has expired.",
+  "DOCUMENT_DATE_UNREADABLE": "Document date could not be read.",
+  "BUSINESS_REGISTRATION_REQUIRED": "Upload a GST or Udyam registration certificate.",
+  "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE": "An active GST registration is required for the selected profile.",
+  "ADDRESS_PROOF_REQUIRED": "Upload an address proof.",
+  "SIGNATORY_ID_REQUIRED": "Upload the authorised signatory identity document.",
+  "ADDRESS_DOES_NOT_MATCH_GST_REGISTRY": "Address proof does not match the GST registry address.",
+  "REGISTRATIONS_NAME_MISMATCH": "GST and Udyam business names do not match."
+};

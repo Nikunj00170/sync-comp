@@ -12,7 +12,8 @@ public class CustomerKycService {
     public record Audit(String action, String at) {}
     private final CustomerStore store;
     private final DemoPolicy demo;
-    public CustomerKycService(CustomerStore store, DemoPolicy demo) { this.store = store; this.demo = demo; }
+    private final SmartKycService smart;
+    public CustomerKycService(CustomerStore store, DemoPolicy demo, SmartKycService smart) { this.store = store; this.demo = demo; this.smart = smart; }
     public static Kyc pending() { return new Kyc("pending", null, false, List.of(), null); }
     public Kyc get(String subject) { return store.get(subject, "KYC", Kyc.class).map(CustomerStore.Stored::value).orElseGet(CustomerKycService::pending); }
     public Kyc consent(String subject, String provider, boolean consent) {
@@ -28,7 +29,12 @@ public class CustomerKycService {
         var old = current.value();
         if (!old.consent() || old.provider() == null || old.documents().size() < 2)
             throw ApiException.conflict("Consent, a provider and two completed documents are required.");
-        if ("demo_verified".equals(old.status())) return old;
+        var assessment = smart.assess(subject);
+        if (!"ready".equals(assessment.status()))
+            throw ApiException.conflict("Documents need review. Run Smart KYC checks for the issues before verification.");
+        // assess performs a conditional write to detect changed consent/documents; reload its version.
+        current = store.get(subject, "KYC", Kyc.class).orElseThrow(ApiException::notFound);
+        if (!current.value().equals(old)) throw ApiException.conflict("Documents or consent changed. Run verification again.");
         var next = new Kyc("demo_verified", old.provider(), true, old.documents(), Instant.now().toString());
         save(subject, next, current.version(), "demo_verified");
         return next;

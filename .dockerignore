@@ -5,6 +5,9 @@
 !shared/
 !shared/data/
 !shared/data/catalogue.json
+!shared/data/mock_gstin_registry.json
+!shared/data/mock_udyam_registry.json
+!shared/data/kyc-ocr-fixtures.json
 services/sync-backend/target/
 services/sync-backend/.env*
 services/sync-backend/.idea/

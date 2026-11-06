@@ -269,7 +269,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const saveProfile = async (profile: Profile) => {
     const parsed = profileSchema.parse(profile);
     const saved = cloud ? await call((token) => customerApi.saveProfile(token, parsed)) : parsed;
-    update((prev) => ({ ...prev, profile: saved, draftStep: 0 }));
+    const kyc = cloud ? await call(customerApi.kyc) : current.current.kyc;
+    update((prev) => ({ ...prev, profile: saved, kyc, draftStep: 0 }));
   };
   const saveKyc = async (provider: Kyc['provider'], consent: boolean) => {
     if (cloud && !provider) throw new Error('Choose a verification provider first.');

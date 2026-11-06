@@ -133,6 +133,7 @@ export const customerApi = {
   kyc: (token: string) => request<Kyc>('/v1/kyc', token),
   saveKyc: (token: string, provider: string, consent: boolean) =>
     request<Kyc>('/v1/kyc', token, 'PUT', { provider, consent }),
+  assessKyc: (token: string) => request<{status: string; asOf: string; source: string; documents: {documentId: string; kind: string; maskedIdentifier?: string; issues: string[]}[]; issues: string[]}>('/v1/kyc/assessment', token, 'POST'),
   verifyDemo: (token: string) => request<Kyc>('/v1/kyc/demo-verification', token, 'POST'),
   documents: (token: string) => collection<DocumentReservation>('/v1/documents', token),
   upload: (token: string, file: { name: string; type: string; size: number }) =>
