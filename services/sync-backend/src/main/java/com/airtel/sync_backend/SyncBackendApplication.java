@@ -1,0 +1,13 @@
+package com.airtel.sync_backend;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SyncBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SyncBackendApplication.class, args);
+	}
+
+}
