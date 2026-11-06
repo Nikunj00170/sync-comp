@@ -69,3 +69,19 @@ read state and all ticket operations enforce authenticated ownership. Lists use
 bounded pagination. Demo order advancement requires both trusted admin scope and
 the demo flag and operates only on that principal's records. No external support
 message or payment is sent.
+
+Phase 4 verification: 155 tests, 0 failures/errors/skips; Java 21 clean verify.
+
+## Phase 5 — AWS persistence and object storage adapters
+
+Added AWS SDK v2 DynamoDB and S3 adapters behind the existing application ports.
+DynamoDB uses strongly consistent keyed reads, bounded prefix queries and atomic
+conditional transactions; it never scans. Customer records are separate items,
+so orders and activity do not accumulate in an unbounded customer document.
+Unconditional profile updates atomically increment the revision. S3 authorizations
+expire after five minutes, bind content metadata and require `If-None-Match: *` to
+prevent replacement. Completion verifies private object metadata with HeadObject.
+
+These adapters require configured existing infrastructure; no resource was created
+or deployed and no real Cognito/AWS integration test is claimed. Tests exercise
+request construction, failure mapping and real local URL signing with fake keys.

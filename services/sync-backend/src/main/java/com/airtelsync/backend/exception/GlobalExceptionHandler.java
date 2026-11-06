@@ -102,6 +102,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiErrorResponse.of("INVALID_REQUEST", "Invalid parameter.", List.of()));
     }
 
+    @ExceptionHandler(software.amazon.awssdk.core.exception.SdkException.class)
+    public ResponseEntity<ApiErrorResponse> handleStorage(Exception ex) {
+        log.error("AWS storage request failed: {}", ex.getClass().getSimpleName());
+        return ResponseEntity.status(503).body(ApiErrorResponse.of("STORAGE_UNAVAILABLE", "Storage is temporarily unavailable. Retry later.", List.of()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);
