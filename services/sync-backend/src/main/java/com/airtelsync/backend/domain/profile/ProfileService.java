@@ -23,6 +23,11 @@ public class ProfileService {
         });
     }
 
+    public Profile requireProfile(String subject) {
+        return repository.findBySubject(subject).orElseThrow(() ->
+            com.airtelsync.backend.exception.ApiException.conflict("Complete your business profile first."));
+    }
+
     public Profile updateProfile(String subject, Profile profile) {
         return repository.save(subject, new Profile(profile.name(), profile.business(), profile.email(),
             profile.industry(), profile.city(), profile.tier(), profile.employees(), profile.sites(),

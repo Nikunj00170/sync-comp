@@ -29,3 +29,19 @@ Profile trim/required rules follow the TypeScript schema. Phone is a free string
 in that schema. Null cart entries and null priorities are rejected. JWTs require
 nonblank subject and expiration. Security uses stateless bearer authentication.
 Tests use distinct subjects including identical emails to exercise isolation.
+
+Phase 1 verification: 140 tests, 0 failures/errors/skips; Java 21 clean verify.
+
+## Phase 2 — Orders, invoices and recommendations
+
+Added the three remaining read APIs with customer isolation and bounded pagination
+(array response preserved; `X-Next-Cursor`, `limit`, `after`). Added demo checkout
+with explicit consent and `Idempotency-Key`, cancellation and recommendations.
+Checkout atomically saves the order, immutable invoice snapshot, notification,
+idempotency response and conditional KYC version. Demo actions default to disabled.
+All customer records use a repository port with atomic conditional transactions.
+
+Fixed an additional domain bug: tax multiplication overflowed a Java int even at
+moderate totals. Integer paise now uses long arithmetic and exact rounding, keeping
+the existing 18% formula and separate setup charges. Large valid quantities have
+a regression test. API monetary JSON fields remain numbers.

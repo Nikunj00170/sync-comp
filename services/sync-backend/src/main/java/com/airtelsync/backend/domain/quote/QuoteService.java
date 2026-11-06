@@ -25,8 +25,8 @@ public class QuoteService {
 
     public Quote quote(List<CartLine> lines, Profile profile) {
         List<String> errors = new ArrayList<>();
-        int monthly = 0;
-        int setup = 0;
+        long monthly = 0;
+        long setup = 0;
         Set<String> seen = new LinkedHashSet<>();
 
         for (CartLine line : lines) {
@@ -56,20 +56,20 @@ public class QuoteService {
                 errors.add(product.name() + " needs a compatible connection");
             }
 
-            monthly += product.price() * line.quantity();
-            setup += product.setup() * line.quantity();
+            monthly += (long) product.price() * line.quantity();
+            setup += (long) product.setup() * line.quantity();
         }
 
-        int tax = Math.round((monthly * CatalogueService.DEMO_TAX_BPS) / 10000f);
+        long tax = (monthly * CatalogueService.DEMO_TAX_BPS + 5000) / 10000;
 
         return new Quote(
             CatalogueService.CATALOGUE_VERSION,
-            new ArrayList<>(lines),
+            List.copyOf(lines),
             monthly,
             setup,
             tax,
             monthly + tax,
-            errors
+            List.copyOf(errors)
         );
     }
 }

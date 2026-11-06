@@ -82,6 +82,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiErrorResponse> handleApi(ApiException ex) {
+        return ResponseEntity.status(ex.status()).body(ApiErrorResponse.of(ex.code(), ex.getMessage(), List.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(Exception ex) {
+        return ResponseEntity.status(404).body(ApiErrorResponse.of("NOT_FOUND", "Route not found.", List.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethod(Exception ex) {
+        return ResponseEntity.status(405).body(ApiErrorResponse.of("METHOD_NOT_ALLOWED", "Method not allowed.", List.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleType(Exception ex) {
+        return ResponseEntity.badRequest().body(ApiErrorResponse.of("INVALID_REQUEST", "Invalid parameter.", List.of()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);

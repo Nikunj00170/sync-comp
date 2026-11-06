@@ -85,7 +85,7 @@ class InvoiceServiceTest {
         Profile profile = TestFixtures.demoProfile();
 
         Invoice invoice = invoiceService.makeInvoice(cart, profile, "November 2026");
-        int originalTotal = invoice.total();
+        long originalTotal = invoice.total();
 
         // Modify original cart
         cart = List.of(new CartLine("P01", 100)); // different quantity
