@@ -25,7 +25,9 @@ class SecurityConfigTest {
 
 	@BeforeEach
 	void setup() {
-		mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+		mockMvc = MockMvcBuilders.webAppContextSetup(context)
+            .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+            .build();
 	}
 
 	@Test
@@ -35,16 +37,16 @@ class SecurityConfigTest {
 	}
 
 	@Test
-	void unknownEndpointReturnsNotFound() throws Exception {
+	void unknownEndpointRequiresAuthentication() throws Exception {
 		mockMvc.perform(get("/unknown"))
-			.andExpect(status().isNotFound());
+			.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void actuatorHealthEndpointIsPublicByDefault() throws Exception {
-		// Spring Boot Actuator health endpoint is public by default for container health checks
+	void actuatorHealthEndpointRequiresAuthentication() throws Exception {
+		// Only /health is public; actuator endpoints require authentication.
 		mockMvc.perform(get("/actuator/health"))
-			.andExpect(status().isOk());
+			.andExpect(status().isForbidden());
 	}
 
 }

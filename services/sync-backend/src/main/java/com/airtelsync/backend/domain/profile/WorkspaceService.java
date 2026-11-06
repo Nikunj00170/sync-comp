@@ -45,6 +45,10 @@ public class WorkspaceService {
     }
 
     public Workspace initialWorkspace() {
+        return initialWorkspace(Instant.now());
+    }
+
+    Workspace initialWorkspace(Instant now) {
         Profile profile = new Profile(
             "Aanya Sharma",
             "Northstar Studio",
@@ -68,20 +72,15 @@ public class WorkspaceService {
             new CartLine("P17", 1)
         );
 
-        // Use fixed timezone (Asia/Kolkata) for deterministic demo data timestamps
+        // Use the business timezone for billing periods; serialize timestamps as UTC instants.
         ZoneId demoZone = ZoneId.of("Asia/Kolkata");
-        Instant now = Instant.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
         DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("en-IN"));
 
-        java.util.function.Function<Integer, String> before = days ->
-            now.minusSeconds(days * 86400L).atZone(demoZone).format(formatter);
-
-        java.util.function.Function<Integer, String> beforeDouble = days ->
-            now.minusSeconds((long) (days * 86400 * 0.6)).atZone(demoZone).format(formatter);
+        java.util.function.Function<Double, String> before = days ->
+            now.minusMillis(Math.round(days * 86400000L)).toString();
 
         String current = now.atZone(demoZone).format(monthFormatter);
-        String previous = now.minusSeconds(30L * 86400).atZone(demoZone).format(monthFormatter);
+        String previous = now.atZone(demoZone).minusMonths(1).format(monthFormatter);
 
         Quote activeQuote = quoteService.quote(activeLines, profile);
 
@@ -99,14 +98,14 @@ public class WorkspaceService {
             activeEvents.add(new TimelineEvent(
                 orderService.getStatusLabel(s),
                 "Sample service milestone.",
-                before.apply(36 - i)
+                before.apply(36.0 - i)
             ));
         }
 
         Order active = new Order(
             "SYNC-20481",
             "Your connected workspace",
-            before.apply(36),
+            before.apply(36.0),
             OrderStatus.active,
             activeLines,
             activeQuote,
@@ -128,14 +127,14 @@ public class WorkspaceService {
             pendingEvents.add(new TimelineEvent(
                 orderService.getStatusLabel(s),
                 "Sample installation progress.",
-                beforeDouble.apply(3 - i)
+                before.apply(3.0 - i * 0.6)
             ));
         }
 
         Order pending = new Order(
             "SYNC-20846",
             "Studio guest Wi-Fi",
-            before.apply(3),
+            before.apply(3.0),
             OrderStatus.scheduled,
             pendingLines,
             pendingQuote,
@@ -163,8 +162,8 @@ public class WorkspaceService {
             new Invoice(
                 "INV-2026-0031",
                 previous,
-                before.apply(32),
-                before.apply(25),
+                before.apply(32.0),
+                before.apply(25.0),
                 "paid",
                 invoice.lines(),
                 invoice.subtotal(),
@@ -182,7 +181,7 @@ public class WorkspaceService {
                 "Review your sample guest Wi-Fi installation and choose a convenient slot.",
                 "/orders/SYNC-20846",
                 false,
-                before.apply(0).replace("T", "T00:")
+                before.apply(0.2)
             ),
             new Notification(
                 "n2",
@@ -190,7 +189,7 @@ public class WorkspaceService {
                 "Your consolidated demo invoice is ready to review.",
                 "/billing",
                 false,
-                before.apply(1)
+                before.apply(1.0)
             ),
             new Notification(
                 "n3",
@@ -198,7 +197,7 @@ public class WorkspaceService {
                 "Complete verification to try the full demo checkout.",
                 "/verification",
                 false,
-                before.apply(2)
+                before.apply(2.0)
             )
         );
 

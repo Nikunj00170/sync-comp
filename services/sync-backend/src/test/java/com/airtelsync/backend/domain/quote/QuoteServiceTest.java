@@ -149,4 +149,26 @@ class QuoteServiceTest {
         assertEquals(0, quote.errors().size());
         assertEquals(12500 * 12, quote.monthly());
     }
+    @Test
+    void taxDoesNotOverflowForValidMultiUnitCart() {
+        Quote quote = quoteService.quote(List.of(new CartLine("P05", 3)), TestFixtures.demoProfile());
+        assertTrue(quote.errors().isEmpty());
+        assertEquals(2400000L, quote.monthly());
+        assertEquals(432000L, quote.tax());
+        assertEquals(2832000L, quote.total());
+    }
+
+    @Test
+    void maximumCartAmountsRemainExact() {
+        Profile profile = new Profile("Test", "Test", "test@example.com", Profile.Industry.manufacturing,
+            "City", 1, 1000, 100, 1000000, true, List.of("security"), "Address", "");
+        List<CartLine> lines = catalogueService.getAllProducts().stream()
+            .map(product -> new CartLine(product.id(), 1000)).toList();
+        Quote quote = quoteService.quote(lines, profile);
+        assertTrue(quote.errors().isEmpty());
+        assertEquals(5405800000L, quote.monthly());
+        assertEquals(4830000000L, quote.setup());
+        assertEquals(973044000L, quote.tax());
+        assertEquals(6378844000L, quote.total());
+    }
 }

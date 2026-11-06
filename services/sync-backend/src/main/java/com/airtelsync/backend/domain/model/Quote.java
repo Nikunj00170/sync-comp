@@ -6,10 +6,10 @@ import java.util.List;
 public record Quote(
     @JsonProperty("version") String version,
     @JsonProperty("lines") List<CartLine> lines,
-    @JsonProperty("monthly") int monthly,
-    @JsonProperty("setup") int setup,
-    @JsonProperty("tax") int tax,
-    @JsonProperty("total") int total,
+    @JsonProperty("monthly") long monthly,
+    @JsonProperty("setup") long setup,
+    @JsonProperty("tax") long tax,
+    @JsonProperty("total") long total,
     @JsonProperty("errors") List<String> errors
 ) {
 }

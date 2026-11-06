@@ -10,9 +10,9 @@ public record Invoice(
     @JsonProperty("dueAt") String dueAt,
     @JsonProperty("status") String status,
     @JsonProperty("lines") List<InvoiceLine> lines,
-    @JsonProperty("subtotal") int subtotal,
-    @JsonProperty("tax") int tax,
-    @JsonProperty("total") int total,
+    @JsonProperty("subtotal") long subtotal,
+    @JsonProperty("tax") long tax,
+    @JsonProperty("total") long total,
     @JsonProperty("paymentReference") String paymentReference,
     @JsonProperty("billedTo") BilledTo billedTo
 ) {

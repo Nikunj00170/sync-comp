@@ -181,4 +181,34 @@ class WorkspaceServiceTest {
         assertFalse(pending.events().isEmpty());
         assertFalse(pending.events().get(0).at().isEmpty());
     }
+    @Test
+    void workspaceTimestampsAreValidInstantsAndMilestonesAreSpaced() {
+        Workspace workspace = workspaceService.initialWorkspace();
+        workspace.notifications().forEach(n -> java.time.Instant.parse(n.createdAt()));
+        workspace.invoices().forEach(i -> {
+            java.time.Instant.parse(i.issuedAt());
+            java.time.Instant.parse(i.dueAt());
+        });
+        workspace.orders().forEach(o -> {
+            java.time.Instant.parse(o.createdAt());
+            o.events().forEach(e -> java.time.Instant.parse(e.at()));
+        });
+        Order pending = workspace.orders().getFirst();
+        assertEquals(pending.createdAt(), pending.events().getFirst().at());
+        for (int i = 1; i < pending.events().size(); i++) {
+            assertEquals(51840L, java.time.Duration.between(
+                java.time.Instant.parse(pending.events().get(i - 1).at()),
+                java.time.Instant.parse(pending.events().get(i).at())).toSeconds());
+        }
+    }
+    @Test
+    void previousInvoiceUsesPreviousCalendarMonth() {
+        for (String instant : List.of("2026-03-01T12:00:00Z", "2026-03-31T12:00:00Z", "2027-01-01T12:00:00Z")) {
+            java.time.Instant now = java.time.Instant.parse(instant);
+            Workspace workspace = workspaceService.initialWorkspace(now);
+            String expected = now.atZone(java.time.ZoneId.of("Asia/Kolkata")).minusMonths(1)
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("en-IN")));
+            assertEquals(expected, workspace.invoices().get(1).period());
+        }
+    }
 }
