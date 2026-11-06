@@ -29,7 +29,7 @@ public class DynamoDbCustomerStore implements CustomerStore {
         return item.isEmpty() ? Optional.empty() : Optional.of(decode(item, type));
     }
     public <T> Page<T> list(String subject, String prefix, Class<T> type, int limit, String after) {
-        InMemoryCustomerStore.validatePage(prefix, limit, after);
+        CustomerStore.validatePage(prefix, limit, after);
         var request = QueryRequest.builder().tableName(table).consistentRead(true).limit(limit)
             .keyConditionExpression("PK = :owner AND begins_with(SK, :prefix)")
             .expressionAttributeValues(Map.of(":owner", text("CUSTOMER#" + subject), ":prefix", text(prefix)));

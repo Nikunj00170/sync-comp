@@ -31,12 +31,13 @@ public class S3DocumentStorage implements DocumentStorage {
         signed.signedHeaders().forEach((name, values) -> {
             // Browser supplies Host and Content-Length itself.
             if (!name.equalsIgnoreCase("host") && !name.equalsIgnoreCase("content-length"))
-                headers.put(name, String.join(",", values));
+                headers.put(name.toLowerCase(Locale.ROOT), String.join(",", values));
         });
-        headers.put("Content-Type", type);
-        headers.put("If-None-Match", "*");
+        headers.put("content-type", type);
+        headers.put("if-none-match", "*");
         return new Upload(signed.url().toExternalForm(), Map.copyOf(headers));
     }
+    public void delete(String key) { client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()); }
     public void verify(String key, String type, long size) {
         try {
             var head = client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());

@@ -87,4 +87,16 @@ class ProfileControllerTest {
             .contentType(MediaType.APPLICATION_JSON).content("{"))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("MALFORMED_REQUEST"));
     }
+    @Test void rejectsFractionalCountsAndCoercedBooleansAndText() throws Exception {
+        for (String body : new String[]{BODY.replace("\"employees\":10", "\"employees\":1.5"),
+                BODY.replace("\"hasGstin\":false", "\"hasGstin\":\"false\""),
+                BODY.replace("[\"productivity\"]", "[123]"), BODY.replace("\"industry\":\"retail\"", "\"industry\":1")}) {
+            mvc.perform(put("/v1/me").header("Authorization", token(subject))
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("MALFORMED_REQUEST"));
+        }
+        mvc.perform(put("/v1/me").header("Authorization", token(subject))
+            .contentType(MediaType.APPLICATION_JSON).content(BODY.replace("contact@example.com", "contact@local")))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
 }

@@ -21,4 +21,10 @@ public record Product(
     @JsonProperty("installDays") int installDays,
     @JsonProperty("segments") List<String> segments
 ) {
+    public Product {
+        tiers = java.util.List.copyOf(tiers);
+        dependencies = java.util.List.copyOf(dependencies);
+        segments = java.util.List.copyOf(segments);
+    }
+
 }

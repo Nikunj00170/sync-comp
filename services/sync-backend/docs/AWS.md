@@ -46,7 +46,7 @@ The runtime role needs `dynamodb:GetItem`, `dynamodb:Query`, and
 operations must allow the underlying item actions where required by the policy.
 
 Use a private S3 bucket with Block Public Access and Bucket Owner Enforced object
-ownership. Require TLS and bucket encryption. The runtime role needs `s3:PutObject`
+ownership. Require TLS and bucket encryption. The runtime role needs `s3:PutObject`, `s3:DeleteObject`
 and `s3:GetObject` (for HeadObject) on `customers/*/documents/*`; no public ACLs or
 public object URLs are used. Use bucket policies to require conditional writes if
 other writers have access. CORS on that bucket must allow the frontend's exact

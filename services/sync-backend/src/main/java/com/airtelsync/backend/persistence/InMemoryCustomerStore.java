@@ -21,7 +21,7 @@ public class InMemoryCustomerStore implements CustomerStore {
     }
 
     public <T> Page<T> list(String subject, String prefix, Class<T> type, int limit, String after) {
-        validatePage(prefix, limit, after);
+        CustomerStore.validatePage(prefix, limit, after);
         var records = customers.get(subject);
         if (records == null) return new Page<>(List.of(), null);
         synchronized (records) {
@@ -31,11 +31,6 @@ public class InMemoryCustomerStore implements CustomerStore {
             return new Page<>(keys.stream().map(k -> type.cast(records.get(k).value())).toList(),
                 matching.size() > limit ? keys.getLast() : null);
         }
-    }
-
-    public static void validatePage(String prefix, int limit, String after) {
-        if (limit < 1 || limit > 100 || (after != null && (!after.startsWith(prefix) || after.length() > 200)))
-            throw new IllegalArgumentException("Invalid pagination parameters");
     }
 
     public void transact(String subject, List<Write> writes) {

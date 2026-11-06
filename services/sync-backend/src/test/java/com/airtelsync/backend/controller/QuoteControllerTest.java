@@ -223,4 +223,12 @@ class QuoteControllerTest {
         assert response.contains("Internet Leased Line 100");
         assert response.contains("employees");
     }
+    @Test
+    void rejectsNullLinesAndFractionalQuantities() throws Exception {
+        for (String body : new String[]{"{\"lines\":[null]}",
+            "{\"lines\":[{\"productId\":\"P01\",\"quantity\":1.5}]}"}) {
+            mockMvc.perform(post("/v1/quotes").header("Authorization", "Bearer " + validToken())
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        }
+    }
 }

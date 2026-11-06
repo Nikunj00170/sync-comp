@@ -24,6 +24,7 @@ public class InMemoryDocumentStorage implements DocumentStorage {
         if (objects.putIfAbsent(key, new Content(type, content.clone())) != null)
             throw ApiException.conflict("This upload already has content.");
     }
+    public void delete(String key) { objects.remove(key); }
     public void verify(String key, String type, long size) {
         var content = objects.get(key);
         if (content == null || content.bytes().length != size || !content.type().equals(type))

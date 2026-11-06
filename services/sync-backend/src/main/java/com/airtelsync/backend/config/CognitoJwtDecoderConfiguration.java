@@ -28,8 +28,8 @@ public class CognitoJwtDecoderConfiguration {
 		@Value("${COGNITO_CLIENT_ID:}") String clientId
 	) {
 		if (issuerUri.isBlank() || clientId.isBlank()) {
+            log.warn("Cognito JWT authentication is unavailable: set both COGNITO_ISSUER_URI and COGNITO_CLIENT_ID");
 			return token -> {
-				log.error("Cognito JWT authentication is unavailable: set both COGNITO_ISSUER_URI and COGNITO_CLIENT_ID");
 				throw new BadJwtException("Cognito JWT authentication is not configured");
 			};
 		}

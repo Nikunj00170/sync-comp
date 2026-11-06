@@ -93,4 +93,41 @@ class DocumentsControllerTest {
             .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"a\",\"type\":\"application/pdf\",\"size\":4}"))
             .andExpect(status().isConflict());
     }
+    @Test void reservationsCanBeRenewedAndDeletedWithoutLeakingOwnershipOrQuota() throws Exception {
+        String id = reserve();
+        mvc.perform(get("/v1/documents").header("Authorization", auth))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].key").doesNotExist());
+        mvc.perform(get("/v1/documents").header("Authorization", token(UUID.randomUUID().toString())))
+            .andExpect(content().json("[]"));
+        mvc.perform(post("/v1/documents/" + id + "/uploads").header("Authorization", auth))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.documentId").value(id));
+        upload(id);
+        mvc.perform(delete("/v1/documents/" + id).header("Authorization", token(UUID.randomUUID().toString())))
+            .andExpect(status().isNotFound());
+        mvc.perform(delete("/v1/documents/" + id).header("Authorization", auth)).andExpect(status().isNoContent());
+        mvc.perform(delete("/v1/documents/" + id).header("Authorization", auth)).andExpect(status().isNoContent());
+        mvc.perform(get("/v1/kyc").header("Authorization", auth)).andExpect(jsonPath("$.documents.length()").value(0))
+            .andExpect(jsonPath("$.status").value("pending"));
+        mvc.perform(post("/v1/documents/" + id + "/complete").header("Authorization", auth)).andExpect(status().isNotFound());
+        for (int i = 0; i < 8; i++) reserve();
+    }
+    @Test void completeCustomerJourneyKeepsInvoiceSnapshotAfterProfileChanges() throws Exception {
+        mvc.perform(put("/v1/me").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+            .content(ProfileControllerTest.BODY)).andExpect(status().isOk());
+        upload(reserve()); upload(reserve());
+        mvc.perform(put("/v1/kyc").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"provider\":\"digilocker\",\"consent\":true}")).andExpect(status().isOk());
+        mvc.perform(post("/v1/kyc/demo-verification").header("Authorization", auth)).andExpect(status().isOk());
+        mvc.perform(get("/v1/recommendations").header("Authorization", auth))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(3));
+        mvc.perform(post("/v1/orders").header("Authorization", auth).header("Idempotency-Key", "journey-123")
+            .contentType(MediaType.APPLICATION_JSON).content(OrdersControllerTest.BODY))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.quote.total").value(117882));
+        mvc.perform(put("/v1/me").header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+            .content(ProfileControllerTest.BODY.replace("Example Studio", "Changed Business"))).andExpect(status().isOk());
+        mvc.perform(get("/v1/invoices").header("Authorization", auth)).andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].billedTo.business").value("Example Studio"))
+            .andExpect(jsonPath("$[0].total").value(117882));
+    }
 }

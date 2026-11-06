@@ -20,6 +20,8 @@ public record ProfileRequest(
 
     @NotBlank(message = "Email is required")
     @Email(message = "Enter a valid email address")
+    // Matches the canonical Zod profile email expression.
+    @Pattern(regexp = "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$", message = "Enter a valid email address")
     String email,
 
     @NotNull(message = "Industry is required")

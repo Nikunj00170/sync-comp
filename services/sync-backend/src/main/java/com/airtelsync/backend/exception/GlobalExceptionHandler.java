@@ -108,6 +108,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(503).body(ApiErrorResponse.of("STORAGE_UNAVAILABLE", "Storage is temporarily unavailable. Retry later.", List.of()));
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingHeader(Exception ex) {
+        return ResponseEntity.badRequest().body(ApiErrorResponse.of("INVALID_REQUEST", "A required header is missing.", List.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleContentType(Exception ex) {
+        return ResponseEntity.status(415).body(ApiErrorResponse.of("UNSUPPORTED_MEDIA_TYPE", "Content type is not supported.", List.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccept(Exception ex) {
+        return ResponseEntity.status(406).body(ApiErrorResponse.of("NOT_ACCEPTABLE", "Requested response type is not supported.", List.of()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);

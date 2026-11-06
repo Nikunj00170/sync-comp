@@ -10,4 +10,8 @@ public record Kyc(
     @JsonProperty("documents") List<DocumentMeta> documents,
     @JsonProperty("verifiedAt") String verifiedAt
 ) {
+    public Kyc {
+        documents = java.util.List.copyOf(documents);
+    }
+
 }

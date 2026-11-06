@@ -22,7 +22,9 @@ class S3DocumentStorageTest {
             assertTrue(upload.url().contains("X-Amz-Expires=300"));
             assertTrue(upload.url().contains("X-Amz-Signature="));
             assertTrue(upload.url().contains("if-none-match"));
-            assertEquals("*", upload.headers().get("If-None-Match"));
+            assertEquals("*", upload.headers().get("if-none-match"));
+            assertEquals(upload.headers().size(), upload.headers().keySet().stream().map(String::toLowerCase).distinct().count());
+            assertEquals("application/pdf", upload.headers().get("content-type"));
             verifyNoInteractions(client);
         }
     }

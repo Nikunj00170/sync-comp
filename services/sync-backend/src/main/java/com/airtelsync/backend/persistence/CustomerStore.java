@@ -12,6 +12,11 @@ public interface CustomerStore {
         public static Write create(String key, Object value) { return new Write(key, value, 0L); }
         public static Write replace(String key, Object value, long version) { return new Write(key, value, version); }
     }
+    static void validatePage(String prefix, int limit, String after) {
+        if (limit < 1 || limit > 100 || (after != null && (!after.startsWith(prefix) || after.length() > 200)))
+            throw new IllegalArgumentException("Invalid pagination parameters");
+    }
+
     <T> Optional<Stored<T>> get(String subject, String key, Class<T> type);
     <T> Page<T> list(String subject, String prefix, Class<T> type, int limit, String after);
     void transact(String subject, List<Write> writes);

@@ -85,3 +85,32 @@ prevent replacement. Completion verifies private object metadata with HeadObject
 These adapters require configured existing infrastructure; no resource was created
 or deployed and no real Cognito/AWS integration test is claimed. Tests exercise
 request construction, failure mapping and real local URL signing with fake keys.
+
+Phase 5 verification: 161 tests, 0 failures/errors/skips; Java 21 clean verify.
+
+## Phase 6 — Contract hardening and delivery
+
+Added exact-origin CORS for web/Capacitor and stateless authentication, strict
+boolean/text/integer JSON handling, canonical Zod email validation, null cart-line
+validation and immutable persisted collections. Corrected duplicate-case S3
+headers so browser clients send each signed header once. Added upload renewal and
+audited deletion with quota reclamation and KYC invalidation before object cleanup.
+
+Added OpenAPI 3.1 documentation, environment reference, Java 21 container packaging,
+backend CI and a full local customer journey test. Verified configured preflight
+and denied origins, missing Cognito fail-closed behavior, signed admin authority
+mapping and signed blank-subject rejection. No frontend code was changed.
+
+Docker image execution is unverified: the Docker CLI is installed but no daemon
+is available in this workspace. The executable JAR is built by Maven; real AWS,
+Cognito pool, KYC provider, payment and deployment validation remain separate.
+
+Final verification: `./mvnw clean verify` on Java 21 passed 169 tests, with
+0 failures, 0 errors and 0 skipped. OpenAPI JSON parses and all references resolve
+across 27 operations. `git diff --check` passed.
+
+Packaged JAR smoke test passed on a temporary local HTTP port: health returned UP,
+canonical catalogue returned 25 products, protected profile requests returned JSON
+401 with both missing and malformed bearer tokens, and ZIP inspection confirmed
+that test controllers and test JWT configuration are absent from the executable
+artifact. The temporary server was stopped after the check.

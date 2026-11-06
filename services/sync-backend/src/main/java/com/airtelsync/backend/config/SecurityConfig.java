@@ -30,6 +30,7 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
 			.httpBasic(httpBasic -> httpBasic.disable())
 			.formLogin(formLogin -> formLogin.disable())

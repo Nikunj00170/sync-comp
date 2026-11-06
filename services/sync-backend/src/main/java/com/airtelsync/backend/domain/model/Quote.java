@@ -12,4 +12,9 @@ public record Quote(
     @JsonProperty("total") long total,
     @JsonProperty("errors") List<String> errors
 ) {
+    public Quote {
+        lines = java.util.List.copyOf(lines);
+        errors = java.util.List.copyOf(errors);
+    }
+
 }

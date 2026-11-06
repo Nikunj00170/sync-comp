@@ -205,4 +205,21 @@ class SecurityConfigTest {
 		mockMvc.perform(get("/v1/protected"))
 			.andExpect(status().isUnauthorized());
 	}
+    @Test
+    void signedAdminScopeIsMappedToAuthority() throws Exception {
+        String token = CognitoJwtTestConfiguration.token(CognitoJwtTestConfiguration.ISSUER,
+            CognitoJwtTestConfiguration.CLIENT_ID, "access", Instant.now().plusSeconds(300), null,
+            "admin-subject", null, null, CognitoJwtTestConfiguration.TEST_KEY_PAIR, "openid admin");
+        mockMvc.perform(get("/v1/admin/test").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk()).andExpect(content().string("admin"));
+    }
+
+    @Test
+    void signedTokenWithBlankSubjectIsRejectedBeforeController() throws Exception {
+        String token = CognitoJwtTestConfiguration.token(CognitoJwtTestConfiguration.ISSUER,
+            CognitoJwtTestConfiguration.CLIENT_ID, "access", Instant.now().plusSeconds(300), null,
+            " ", null, null, CognitoJwtTestConfiguration.TEST_KEY_PAIR);
+        mockMvc.perform(get("/v1/me").header("Authorization", "Bearer " + token))
+            .andExpect(status().isUnauthorized());
+    }
 }

@@ -17,6 +17,10 @@ public record Profile(
     @JsonProperty("address") String address,
     @JsonProperty("phone") String phone
 ) {
+    public Profile {
+        priorities = java.util.List.copyOf(priorities);
+    }
+
     public enum Industry {
         professional, retail, manufacturing, hospitality
     }

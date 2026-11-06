@@ -74,6 +74,11 @@ public class CognitoJwtTestConfiguration {
 
 	public static String token(String issuer, String clientId, String tokenUse, Instant expiresAt,
 			Instant notBefore, String subject, String email, String name, KeyPair signingPair) {
+        return token(issuer, clientId, tokenUse, expiresAt, notBefore, subject, email, name, signingPair, null);
+    }
+
+    public static String token(String issuer, String clientId, String tokenUse, Instant expiresAt,
+            Instant notBefore, String subject, String email, String name, KeyPair signingPair, String scope) {
 		Instant issuedAt = expiresAt.isBefore(Instant.now()) ? expiresAt.minusSeconds(300) : Instant.now().minusSeconds(30);
 		JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
 			.issuer(issuer)
@@ -82,6 +87,7 @@ public class CognitoJwtTestConfiguration {
 			.expiresAt(expiresAt)
 			.claim("token_use", tokenUse)
 			.claim("client_id", clientId);
+        if (scope != null) claimsBuilder.claim("scope", scope);
 		if (email != null) {
 			claimsBuilder.claim("email", email);
 		}
