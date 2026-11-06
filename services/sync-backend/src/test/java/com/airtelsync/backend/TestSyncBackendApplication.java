@@ -1,4 +1,4 @@
-package com.airtel.sync_backend;
+package com.airtelsync.backend;
 
 import org.springframework.boot.SpringApplication;
 

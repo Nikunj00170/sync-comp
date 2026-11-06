@@ -1,4 +1,4 @@
-package com.airtel.sync_backend;
+package com.airtelsync.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
