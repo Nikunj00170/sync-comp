@@ -1,4 +1,4 @@
-# Airtel Sync customer app
+# Accel Telecom customer app
 
 A working customer prototype for the web and Capacitor Android, using the supplied fictional case catalogue. Start in the repository root with Node.js 24 or newer:
 

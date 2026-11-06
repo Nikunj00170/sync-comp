@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Airtel Sync</string>
-    <string name="title_activity_main">Airtel Sync</string>
+    <string name="app_name">Accel Telecom</string>
+    <string name="title_activity_main">Accel Telecom</string>
     <string name="package_name">com.airtelsync.customer</string>
     <string name="custom_url_scheme">com.airtelsync.customer</string>
 </resources>

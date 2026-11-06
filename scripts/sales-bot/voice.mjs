@@ -1,7 +1,13 @@
 import { answerQuestion } from './catalogue.mjs';
 
-export async function voiceTurn(audio, type, history, { products, apiKey, fetchImpl = fetch }) {
+export async function voiceTurn(
+  audio,
+  type,
+  history,
+  { products, apiKey, geminiApiKey, model, fetchImpl = fetch },
+) {
   if (!apiKey) throw new Error('Missing SARVAM_API_KEY');
+  if (!geminiApiKey) throw new Error('Missing GEMINI_API_KEY');
   const headers = { 'api-subscription-key': apiKey };
   const form = new FormData();
   form.append(
@@ -22,7 +28,12 @@ export async function voiceTurn(audio, type, history, { products, apiKey, fetchI
   if (typeof transcript !== 'string' || !transcript.trim())
     throw new Error('No speech detected. Please try again.');
   const question = `${history ? `Previous conversation (context only):\n${history}\n` : ''}Current customer question: ${transcript}`;
-  const answer = await answerQuestion(question, { products, apiKey, fetchImpl });
+  const answer = await answerQuestion(question, {
+    products,
+    apiKey: geminiApiKey,
+    model,
+    fetchImpl,
+  });
   // Speak exact catalogue facts, leaving verbose source paths visible in the UI.
   const spoken = answer
     .split('\n')

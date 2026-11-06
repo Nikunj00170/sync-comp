@@ -152,7 +152,8 @@ export function VoiceAdvisor() {
           disabled={state !== 'Ready'}
           onChange={(e) => setConsent(e.target.checked)}
         />{' '}
-        I agree to send my recording and conversation context to Sarvam AI to generate a reply.
+        I agree to send my recording and conversation context to Sarvam AI for speech and Google
+        Gemini for a catalogue-based reply.
       </label>
       <p role="status" aria-live="polite">
         {state}

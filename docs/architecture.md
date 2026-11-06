@@ -1,4 +1,4 @@
-# Airtel Sync — project architecture
+# Accel Telecom — project architecture
 
 Updated 6 November 2026. The prototype's core AWS resources are provisioned and diagnostic-tested. Application features and the production topology below are design targets.
 

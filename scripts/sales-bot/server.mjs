@@ -47,6 +47,8 @@ const server = createServer(async (req, res) => {
       await voiceTurn(Buffer.concat(chunks), req.headers['content-type'], history, {
         products: await loadCatalogue(),
         apiKey: process.env.SARVAM_API_KEY,
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        model: process.env.GEMINI_MODEL,
       }),
     );
   } catch (error) {
@@ -55,7 +57,7 @@ const server = createServer(async (req, res) => {
       error:
         error.message?.startsWith('Speech recognition failed') ||
         error.message?.startsWith('No speech') ||
-        error.message === 'Missing SARVAM_API_KEY'
+        ['Missing SARVAM_API_KEY', 'Missing GEMINI_API_KEY'].includes(error.message)
           ? error.message
           : 'Voice request failed. Check backend credentials, credits and connectivity.',
     });

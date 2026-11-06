@@ -31,17 +31,20 @@ test('API adapter sends source data and renders only validated catalogue facts',
     products,
     apiKey: 'test-key',
     fetchImpl: async (url, options) => {
-      assert.equal(url, 'https://api.sarvam.ai/v1/chat/completions');
+      assert.equal(
+        url,
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+      );
       const body = JSON.parse(options.body);
-      assert.match(body.messages[0].content, /Biz Fibre 100/);
-      assert.equal(options.headers['api-subscription-key'], 'test-key');
+      assert.match(body.systemInstruction.parts[0].text, /Biz Fibre 100/);
+      assert.equal(options.headers['x-goog-api-key'], 'test-key');
       return {
         ok: true,
         json: async () => ({
-          choices: [
+          candidates: [
             {
-              finish_reason: 'stop',
-              message: { content: '{"status":"matched","product_ids":["P01","P02"]}' },
+              finishReason: 'STOP',
+              content: { parts: [{ text: '{"status":"matched","product_ids":["P01","P02"]}' }] },
             },
           ],
         }),
@@ -63,9 +66,37 @@ test('provider errors and truncated responses fail without a fabricated answer',
       ...options,
       fetchImpl: async () => ({
         ok: true,
-        json: async () => ({ choices: [{ finish_reason: 'length' }] }),
+        json: async () => ({ candidates: [{ finishReason: 'MAX_TOKENS' }] }),
       }),
     }),
     /incomplete/,
   );
+});
+
+test('Gemini credentials are required and blocked responses never fall back to Sarvam chat', async () => {
+  let requests = 0;
+  await assert.rejects(
+    answerQuestion('Fibre', {
+      products: await loadCatalogue(),
+      fetchImpl: async () => {
+        requests++;
+        throw new Error('Unexpected request');
+      },
+    }),
+    /Missing GEMINI_API_KEY/,
+  );
+  assert.equal(requests, 0);
+  await assert.rejects(
+    answerQuestion('Fibre', {
+      products: await loadCatalogue(),
+      apiKey: 'test',
+      fetchImpl: async (url) => {
+        requests++;
+        assert.ok(url.startsWith('https://generativelanguage.googleapis.com/'));
+        return { ok: true, json: async () => ({ promptFeedback: { blockReason: 'SAFETY' } }) };
+      },
+    }),
+    /incomplete or blocked/,
+  );
+  assert.equal(requests, 1);
 });

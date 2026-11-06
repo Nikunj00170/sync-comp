@@ -6,7 +6,7 @@ All businesses, people, identifiers, documents and figures in this pack are **fi
 
 | File | Rows | What it is |
 | --- | --- | --- |
-| `product_catalogue.csv` | 25 | Accel Business products with price range, setup fee, contract, eligibility rules and dependencies. Use it to power the advisor and the quote. |
+| `product_catalogue.csv` | 25 | Accel Telecom Business products with price range, setup fee, contract, eligibility rules and dependencies. Use it to power the advisor and the quote. |
 | `smb_leads.csv` | 5,000 | One quarter (Apr-Jun 2026) of small-business leads with profile, funnel stage reached, drop reason, dates, and - for activated leads - bundle bought, value, churn and NPS. |
 | `mock_gstin_registry.csv` | 3,534 | Mock GST registry. Back your "GSTIN lookup" API with this file. |
 | `mock_udyam_registry.csv` | 2,723 | Mock Udyam registry. Back your "Udyam lookup" API with this file. |

@@ -288,7 +288,7 @@ export default function App() {
           </Suspense>
           <footer className="page-footer">
             <span>
-              <span className="red-dot" /> airtel sync <span className="footer-divider">/</span>{' '}
+              <span className="red-dot" /> Accel Telecom <span className="footer-divider">/</span>{' '}
               Made for what’s next.
             </span>
             <span>Demo workspace · Fictional case products · No real purchases</span>

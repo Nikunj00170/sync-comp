@@ -22,7 +22,7 @@ export async function download(blob: Blob, name: string) {
     await Share.share({
       title: name,
       files: [file.uri],
-      dialogTitle: 'Save or share your Airtel Sync file',
+      dialogTitle: 'Save or share your Accel Telecom file',
     });
     return;
   }
@@ -65,7 +65,7 @@ export async function invoicePdf(invoice: Invoice, profile: Profile) {
   };
   const header = () => {
     page.drawRectangle({ x: 0, y: 740, width: 595, height: 102, color: rgb(0.89, 0, 0) });
-    text('airtel sync', 40, 791, 28, true, rgb(1, 1, 1));
+    text('Accel Telecom', 40, 791, 28, true, rgb(1, 1, 1));
     text('CONSOLIDATED DEMO INVOICE', 40, 765, 10, false, rgb(1, 1, 1));
     text(invoice.id, 40, 704, 16, true);
     text(invoice.period, 40, 683, 11);
@@ -152,7 +152,7 @@ export async function downloadStatement(invoices: Invoice[]) {
     new Blob([lines.map((l) => l.map(escape).join('\r\n')).join('\r\n')], {
       type: 'text/csv;charset=utf-8',
     }),
-    'airtel-sync-statement.csv',
+    'accel-telecom-statement.csv',
   );
 }
 export async function downloadCalendar(id: string, slot: string) {
@@ -166,14 +166,14 @@ export async function downloadCalendar(id: string, slot: string) {
   const body = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Airtel Sync//Demo//EN',
+    'PRODID:-//Accel Telecom//Demo//EN',
     'BEGIN:VEVENT',
     'UID:' + id + '@demo.airtelsync',
     'DTSTAMP:' + stamp(new Date()),
     'DTSTART:' + stamp(start),
     'DTEND:' + stamp(new Date(start.getTime() + 2 * 3600000)),
     'SUMMARY:Demo installation - ' + id,
-    'DESCRIPTION:Sample Airtel Sync installation. This is not a real booking.',
+    'DESCRIPTION:Sample Accel Telecom installation. This is not a real booking.',
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');

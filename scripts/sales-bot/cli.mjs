@@ -10,7 +10,8 @@ try {
     console.log(
       await answerQuestion(process.argv.slice(2).join(' '), {
         products,
-        apiKey: process.env.SARVAM_API_KEY,
+        apiKey: process.env.GEMINI_API_KEY,
+        model: process.env.GEMINI_MODEL,
       }),
     );
   }

@@ -239,7 +239,7 @@ export default function Billing() {
           <div className="invoice-preview">
             <div className="invoice-preview-heading">
               <div className="brand-text">
-                airtel <span>sync</span>
+                Accel <span>Telecom</span>
               </div>
               <span className="badge neutral">DEMO INVOICE</span>
             </div>

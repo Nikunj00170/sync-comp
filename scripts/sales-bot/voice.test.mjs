@@ -11,6 +11,7 @@ test('voice turn transcribes, grounds answer in CSV and synthesizes exact facts'
     'Customer: I need broadband',
     {
       apiKey: 'test',
+      geminiApiKey: 'gemini-test',
       products: await loadCatalogue(),
       fetchImpl: async (url, options) => {
         calls.push(url);
@@ -19,16 +20,18 @@ test('voice turn transcribes, grounds answer in CSV and synthesizes exact facts'
           assert.equal(options.body.get('file').type, 'audio/webm');
           return { ok: true, json: async () => ({ transcript: 'What about fibre 100?' }) };
         }
-        if (url.endsWith('/chat/completions')) {
+        if (url.endsWith(':generateContent')) {
+          assert.equal(options.headers['x-goog-api-key'], 'gemini-test');
+          assert.equal(options.headers['api-subscription-key'], undefined);
           const body = JSON.parse(options.body);
-          assert.match(body.messages[1].content, /I need broadband/);
+          assert.match(body.contents[0].parts[0].text, /I need broadband/);
           return {
             ok: true,
             json: async () => ({
-              choices: [
+              candidates: [
                 {
-                  finish_reason: 'stop',
-                  message: { content: '{"status":"matched","product_ids":["P01"]}' },
+                  finishReason: 'STOP',
+                  content: { parts: [{ text: '{"status":"matched","product_ids":["P01"]}' }] },
                 },
               ],
             }),
@@ -53,6 +56,7 @@ test('empty transcripts stop before chat and TTS', async () => {
   await assert.rejects(
     voiceTurn(Buffer.from('silence'), 'audio/webm', '', {
       apiKey: 'test',
+      geminiApiKey: 'gemini-test',
       products: [],
       fetchImpl: async () => ({ ok: true, json: async () => ({ transcript: '' }) }),
     }),
@@ -63,18 +67,19 @@ test('empty transcripts stop before chat and TTS', async () => {
 test('TTS outage preserves text answer with explicit playback warning', async () => {
   const result = await voiceTurn(Buffer.from('recording'), 'audio/mp4', '', {
     apiKey: 'test',
+    geminiApiKey: 'gemini-test',
     products: await loadCatalogue(),
     fetchImpl: async (url) => {
       if (url.endsWith('/speech-to-text'))
         return { ok: true, json: async () => ({ transcript: 'Fibre 100 price?' }) };
-      if (url.endsWith('/chat/completions'))
+      if (url.endsWith(':generateContent'))
         return {
           ok: true,
           json: async () => ({
-            choices: [
+            candidates: [
               {
-                finish_reason: 'stop',
-                message: { content: '{"status":"matched","product_ids":["P01"]}' },
+                finishReason: 'STOP',
+                content: { parts: [{ text: '{"status":"matched","product_ids":["P01"]}' }] },
               },
             ],
           }),

@@ -511,7 +511,7 @@
     "id": "P21",
     "category": "Security",
     "name": "Managed Firewall",
-    "description": "Next-gen firewall at the site, managed by Accel SOC",
+    "description": "Next-gen firewall at the site, managed by Accel Telecom SOC",
     "unit": "per site",
     "price": 199900,
     "priceMax": 299900,

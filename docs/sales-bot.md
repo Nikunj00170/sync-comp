@@ -1,6 +1,6 @@
 # Catalogue sales bot
 
-Local, single-question text prototype using Sarvam chat and `case_source/product_catalogue.csv`. Requires Node 24+. No SDK installation is needed. Set `SARVAM_API_KEY` in ignored root `.env.local`; never prefix the key with `VITE_`. Gemini is not used.
+Local, single-question text prototype using Google Gemini reasoning and `case_source/product_catalogue.csv`. Requires Node 24+. No SDK installation is needed. Set `GEMINI_API_KEY` in ignored root `.env.local`; never prefix the key with `VITE_`. Sarvam is used only for speech in the voice flow. `GEMINI_MODEL` defaults to `gemini-3.5-flash` and can be set to another accessible Gemini model.
 
 Check the knowledge source without a provider call:
 
@@ -8,7 +8,7 @@ Check the knowledge source without a provider call:
 npm run sales:bot -- --check
 ```
 
-Ask a question (sends the question and full product catalogue to Sarvam and consumes API credits):
+Ask a question (sends the question and full product catalogue to Google Gemini and consumes API credits):
 
 ```sh
 npm run sales:bot -- "Compare Biz Fibre 100 and Biz Fibre 300"
@@ -21,7 +21,7 @@ For 25 rows, the entire catalogue fits in the prompt; no embeddings or vector da
 
 ## In-app voice preview
 
-Start the local backend and the app in separate terminals:
+Set both `GEMINI_API_KEY` and `SARVAM_API_KEY` in `.env.local`. Start the local backend and the app in separate terminals:
 
 ```sh
 npm run dev:voice
@@ -30,7 +30,7 @@ npm run dev
 
 Open `http://127.0.0.1:5173`, choose **Say hello to a smarter start**, accept audio processing, and choose **Speak to advisor**. Allow microphone access, speak, then choose **Send question**. Recording automatically stops after 25 seconds. The reply plays aloud and the transcript and catalogue references appear below. Use **Stop** to stop recording/playback or discard a pending reply; **End call & clear** also removes the conversation from the UI. Closing the dialog releases the microphone and clears this component's in-memory conversation.
 
-The pipeline is Sarvam Saaras v4 speech recognition → existing catalogue-grounded Sarvam chat → Bulbul v4 Flash speech synthesis. Replies are English fact cards even for multilingual questions. The last two turns are included as bounded context (maximum 2200 characters), so long conversations may lose earlier details. Recordings and conversations are not saved by this application; they are sent to Sarvam for processing. Provider retention policies apply. Stopping a pending request does not guarantee cancellation of processing already started at Sarvam.
+The pipeline is Sarvam Saaras v4 speech recognition → catalogue-grounded Google Gemini reasoning → Sarvam Bulbul v4 Flash speech synthesis. Replies are English fact cards even for multilingual questions. The last two turns are included as bounded context (maximum 2200 characters), so long conversations may lose earlier details. Recordings and conversations are not saved by this application; audio is sent to Sarvam, and transcripts, bounded conversation context and the catalogue are sent to Google Gemini for reasoning. Provider retention policies apply. Stopping a pending request does not guarantee cancellation of processing already started at either provider.
 
 This is turn-based voice, not full-duplex streaming, phone calling, or interruption detection. Playback may require **Replay reply** if the browser blocks autoplay. A speech synthesis failure keeps the text answer visible with a warning. Account access, actual speech quality, microphone hardware and live provider behavior require manual validation.
 
@@ -38,4 +38,4 @@ The backend binds only to `127.0.0.1:8787`, allows the exact origin `http://127.
 
 Validation: `npm run test:sales-bot` uses mocked provider responses; it does not verify live model quality or account access.
 
-Official API: https://docs.sarvam.ai/api-reference/chat/chat-completions-v1
+Official APIs: https://ai.google.dev/api and https://docs.sarvam.ai/api-reference/authentication

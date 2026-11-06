@@ -1,4 +1,4 @@
-# Airtel Sync
+# Accel Telecom
 
 Customer onboarding, plan discovery, smart KYC, order tracking, and one consolidated invoice view for business services.
 
@@ -159,7 +159,7 @@ The customer build loads ignored root `.env.local` configuration based on [.env.
 
 The supplied pack contains 25 products, 5,000 fictional leads, 3,534 mock GSTIN entries, 2,723 mock Udyam entries, and 47 specimen KYC images for 12 applicants.
 
-The original dataset guide describes a fixed fixture date and intentionally fictional identifiers. Those are case-data conventions, not live-service rules or a replacement for the actual current date. Keep fixture validation isolated from live provider checks. The prepared catalogue represents fictional case products, not current Airtel tariffs.
+The original dataset guide describes a fixed fixture date and intentionally fictional identifiers. Those are case-data conventions, not live-service rules or a replacement for the actual current date. Keep fixture validation isolated from live provider checks. The prepared catalogue represents fictional case products, not current Accel Telecom tariffs.
 
 Recommendations must use server-side rules and versioned quotes. Voice can collect requirements and explain results; it must use the same eligibility and pricing service as the questionnaire. Invoice PDFs are demonstration documents until connected to an authoritative billing system.
 

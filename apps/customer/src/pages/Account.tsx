@@ -186,7 +186,7 @@ export default function Account() {
               onClick={() => {
                 download(
                   new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
-                  'airtel-sync-demo-workspace.json',
+                  'accel-telecom-demo-workspace.json',
                 )
                   .then(() => notify('Your demo workspace export is ready.'))
                   .catch(() => notify('The workspace could not be exported. Please try again.'));
