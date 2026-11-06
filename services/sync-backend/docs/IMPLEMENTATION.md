@@ -45,3 +45,16 @@ Fixed an additional domain bug: tax multiplication overflowed a Java int even at
 moderate totals. Integer paise now uses long arithmetic and exact rounding, keeping
 the existing 18% formula and separate setup charges. Large valid quantities have
 a regression test. API monetary JSON fields remain numbers.
+
+Phase 2 verification: 147 tests, 0 failures/errors/skips; Java 21 clean verify.
+
+## Phase 3 — Private documents and KYC
+
+Upload authorization preserves the adapter's `uploadUrl` and `documentId` fields.
+The added completion endpoint checks stored size and MIME metadata before attaching
+it to KYC. Local content upload requires the owning customer's bearer token and
+reads at most the authorized size plus one byte. Uploads expire after five minutes,
+are limited to eight reservations, and cannot overwrite content. KYC consent,
+provider selection, revocation and demo verification are customer-scoped and audited.
+Changing documents or consent invalidates demo verification. No live verification is
+claimed; demo verification requires `SYNC_DEMO_ENABLED=true`.
