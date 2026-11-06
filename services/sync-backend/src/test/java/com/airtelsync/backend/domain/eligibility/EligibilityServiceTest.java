@@ -183,4 +183,81 @@ class EligibilityServiceTest {
         Profile profile = TestFixtures.demoProfile();
         assertEquals(1, eligibilityService.defaultQuantity(p17, profile));
     }
+
+    @Test
+    void defaultQuantityAllProductsMatchTypeScript() {
+        // Verify every product's defaultQuantity matches TypeScript logic:
+        // - per site -> profile.sites()
+        // - per user, per device, per line -> profile.employees()
+        // - all others -> 1
+        Profile profile = TestFixtures.demoProfile(); // employees: 12, sites: 1
+
+        for (Product product : catalogueService.getAllProducts()) {
+            int expected;
+            switch (product.unit()) {
+                case "per site" -> expected = profile.sites(); // 1
+                case "per user", "per device", "per line" -> expected = profile.employees(); // 12
+                default -> expected = 1;
+            }
+            int actual = eligibilityService.defaultQuantity(product, profile);
+            assertEquals(expected, actual,
+                "Product " + product.id() + " (" + product.unit() + ") should have defaultQuantity=" + expected + " but got " + actual);
+        }
+    }
+
+    @Test
+    void defaultQuantityPerChannelReturnsOne() {
+        Product p12 = catalogueService.getById("P12"); // unit: per channel
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p12, profile));
+    }
+
+    @Test
+    void defaultQuantityPerIPReturnsOne() {
+        Product p11 = catalogueService.getById("P11"); // unit: per IP
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p11, profile));
+    }
+
+    @Test
+    void defaultQuantityPerNumberReturnsOne() {
+        Product p13 = catalogueService.getById("P13"); // unit: per number
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p13, profile));
+    }
+
+    @Test
+    void defaultQuantityPerPackReturnsOne() {
+        Product p14 = catalogueService.getById("P14"); // unit: per pack
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p14, profile));
+    }
+
+    @Test
+    void defaultQuantityPerAccountReturnsOne() {
+        Product p15 = catalogueService.getById("P15"); // unit: per account
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p15, profile));
+    }
+
+    @Test
+    void defaultQuantityPerCounterReturnsOne() {
+        Product p19 = catalogueService.getById("P19"); // unit: per counter
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p19, profile));
+    }
+
+    @Test
+    void defaultQuantityPerCameraReturnsOne() {
+        Product p23 = catalogueService.getById("P23"); // unit: per camera
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p23, profile));
+    }
+
+    @Test
+    void defaultQuantityPerVehicleReturnsOne() {
+        Product p25 = catalogueService.getById("P25"); // unit: per vehicle
+        Profile profile = TestFixtures.demoProfile(); // employees: 12
+        assertEquals(1, eligibilityService.defaultQuantity(p25, profile));
+    }
 }

@@ -93,7 +93,7 @@ public class OrderService {
     }
 
     public Order makeOrder(List<CartLine> lines, Profile profile, Kyc kyc) {
-        if (kyc.status() != null && !kyc.status().equals("demo_verified")) {
+        if (kyc == null || kyc.status() == null || !kyc.status().equals("demo_verified")) {
             throw new IllegalArgumentException("Complete demo verification before placing an order");
         }
         Quote quote = quoteService.quote(lines, profile);

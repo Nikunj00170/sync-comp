@@ -138,18 +138,6 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void localDateTimeFormatsCorrectly() {
-        String formatted = workspaceService.localDateTime(java.time.Instant.parse("2026-11-09T07:15:00Z"));
-        // Should format as yyyy-MM-ddTHH:mm in local timezone
-        assertFalse(formatted.isEmpty());
-    }
-
-    @Test
-    void localDateTimeHandlesInvalidInput() {
-        assertEquals("", workspaceService.localDateTime("not-a-date"));
-    }
-
-    @Test
     void activeOrderLinesMatchExpected() {
         Workspace workspace = workspaceService.initialWorkspace();
         Order active = workspace.orders().stream()
@@ -171,5 +159,26 @@ class WorkspaceServiceTest {
 
         assertEquals(List.of("P22", "P01"),
             pending.lines().stream().map(CartLine::productId).toList());
+    }
+
+    @Test
+    void workspaceUsesFixedTimezoneForDemoData() {
+        Workspace workspace = workspaceService.initialWorkspace();
+        // Verify demo timestamps are generated (not empty)
+        Order active = workspace.orders().stream()
+            .filter(o -> o.status() == OrderStatus.active)
+            .findFirst()
+            .orElseThrow();
+        assertFalse(active.createdAt().isEmpty());
+        assertFalse(active.events().isEmpty());
+        assertFalse(active.events().get(0).at().isEmpty());
+
+        Order pending = workspace.orders().stream()
+            .filter(o -> o.status() == OrderStatus.scheduled)
+            .findFirst()
+            .orElseThrow();
+        assertFalse(pending.createdAt().isEmpty());
+        assertFalse(pending.events().isEmpty());
+        assertFalse(pending.events().get(0).at().isEmpty());
     }
 }

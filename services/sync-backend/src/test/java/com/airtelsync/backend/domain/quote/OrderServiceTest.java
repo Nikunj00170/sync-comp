@@ -37,6 +37,56 @@ class OrderServiceTest {
     }
 
     @Test
+    void makeOrderRejectsNullKyc() {
+        List<CartLine> lines = TestFixtures.basicCart();
+        Profile profile = TestFixtures.demoProfile();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.makeOrder(lines, profile, null));
+    }
+
+    @Test
+    void makeOrderRejectsNullKycStatus() {
+        List<CartLine> lines = TestFixtures.basicCart();
+        Profile profile = TestFixtures.demoProfile();
+        Kyc kycWithNullStatus = new Kyc(null, "digio", true, List.of(), "2024-01-01T00:00:00Z");
+
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.makeOrder(lines, profile, kycWithNullStatus));
+    }
+
+    @Test
+    void makeOrderRejectsPendingKycStatus() {
+        List<CartLine> lines = TestFixtures.basicCart();
+        Profile profile = TestFixtures.demoProfile();
+        Kyc pendingKyc = new Kyc("pending", "digio", true, List.of(), "2024-01-01T00:00:00Z");
+
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.makeOrder(lines, profile, pendingKyc));
+    }
+
+    @Test
+    void makeOrderRejectsInvalidKycStatus() {
+        List<CartLine> lines = TestFixtures.basicCart();
+        Profile profile = TestFixtures.demoProfile();
+        Kyc invalidKyc = new Kyc("invalid", "digio", true, List.of(), "2024-01-01T00:00:00Z");
+
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.makeOrder(lines, profile, invalidKyc));
+    }
+
+    @Test
+    void makeOrderAcceptsDemoVerifiedKyc() {
+        List<CartLine> lines = TestFixtures.basicCart();
+        Profile profile = TestFixtures.demoProfile();
+        Kyc verifiedKyc = TestFixtures.verifiedKyc();
+
+        // Should not throw
+        Order order = orderService.makeOrder(lines, profile, verifiedKyc);
+        assertEquals(OrderStatus.received, order.status());
+    }
+
+    @Test
     void makeOrderRequiresNonEmptyCart() {
         Profile profile = TestFixtures.demoProfile();
         Kyc verified = TestFixtures.verifiedKyc();

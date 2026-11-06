@@ -16,6 +16,7 @@
 	<url/>
 	<properties>
 		<java.version>21</java.version>
+		<shared.catalogue.path>${project.basedir}/../../shared/data/catalogue.json</shared.catalogue.path>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -92,10 +93,47 @@
 	</dependencies>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>${project.basedir}/../../shared/data</directory>
+				<includes>
+					<include>catalogue.json</include>
+				</includes>
+				<targetPath>${project.build.outputDirectory}</targetPath>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>copy-shared-catalogue</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/../../shared/data</directory>
+									<includes>
+										<include>catalogue.json</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

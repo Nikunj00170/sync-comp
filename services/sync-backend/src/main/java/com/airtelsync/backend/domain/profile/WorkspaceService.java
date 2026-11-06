@@ -17,8 +17,11 @@ import com.airtelsync.backend.domain.quote.InvoiceService;
 import com.airtelsync.backend.domain.quote.OrderService;
 import com.airtelsync.backend.domain.quote.QuoteService;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -65,21 +68,20 @@ public class WorkspaceService {
             new CartLine("P17", 1)
         );
 
+        // Use fixed timezone (Asia/Kolkata) for deterministic demo data timestamps
+        ZoneId demoZone = ZoneId.of("Asia/Kolkata");
         Instant now = Instant.now();
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        String nowStr = now.atZone(java.time.ZoneId.systemDefault()).format(formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("en-IN"));
 
         java.util.function.Function<Integer, String> before = days ->
-            now.minusSeconds(days * 86400L).atZone(java.time.ZoneId.systemDefault()).format(formatter);
+            now.minusSeconds(days * 86400L).atZone(demoZone).format(formatter);
 
         java.util.function.Function<Integer, String> beforeDouble = days ->
-            now.minusSeconds((long) (days * 86400 * 0.6)).atZone(java.time.ZoneId.systemDefault()).format(formatter);
+            now.minusSeconds((long) (days * 86400 * 0.6)).atZone(demoZone).format(formatter);
 
-        String current = now.atZone(java.time.ZoneId.systemDefault())
-            .format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("en-IN")));
-        String previous = now.minusSeconds(30L * 86400)
-            .atZone(java.time.ZoneId.systemDefault())
-            .format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("en-IN")));
+        String current = now.atZone(demoZone).format(monthFormatter);
+        String previous = now.minusSeconds(30L * 86400).atZone(demoZone).format(monthFormatter);
 
         Quote activeQuote = quoteService.quote(activeLines, profile);
 
@@ -213,23 +215,5 @@ public class WorkspaceService {
             new Workspace.Preferences(true, true, false),
             0
         );
-    }
-
-    public String localDateTime(Instant instant) {
-        if (instant == null) return "";
-        return instant.atZone(java.time.ZoneId.systemDefault())
-            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"));
-    }
-
-    public String localDateTime(String value) {
-        try {
-            return localDateTime(Instant.parse(value));
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    public String localDateTime(long epochMilli) {
-        return localDateTime(Instant.ofEpochMilli(epochMilli));
     }
 }
