@@ -352,7 +352,7 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
               <Mic size={23} />
             </span>
             <div>
-              <span className="coming-tag">COMING SOON</span>
+              <span className="coming-tag">VOICE PREVIEW</span>
               <h3>Say hello to a smarter start.</h3>
               <p>Your business. Your words. Your voice advisor.</p>
             </div>

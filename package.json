@@ -18,7 +18,10 @@
     "format": "prettier --write \"apps/customer/src/**/*.{ts,tsx,css}\" \"packages/domain/src/**/*.ts\" \"tests/**/*.ts\" \"*.{json,ts}\" \"apps/customer/*.{ts,json,html}\"",
     "android:open": "npm run android:open --workspace @sync/customer",
     "android:debug": "npm run android:sync && npm run android:debug --workspace @sync/customer",
-    "check:staged": "node scripts/check-staged.mjs"
+    "check:staged": "node scripts/check-staged.mjs",
+    "sales:bot": "node --env-file-if-exists=.env.local scripts/sales-bot/cli.mjs",
+    "test:sales-bot": "node --test scripts/sales-bot/*.test.mjs",
+    "dev:voice": "node --env-file-if-exists=.env.local scripts/sales-bot/server.mjs"
   },
   "engines": {
     "node": ">=24"

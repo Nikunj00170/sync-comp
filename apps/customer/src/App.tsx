@@ -25,6 +25,7 @@ import {
 import { catalogue } from '@sync/domain';
 import { useWorkspace } from './lib/store';
 import { useNotify } from './lib/feedback';
+import { VoiceAdvisor } from './components/VoiceAdvisor';
 import { Brand } from './components/Brand';
 import { Modal } from './components/Modal';
 import Dashboard from './pages/Dashboard';
@@ -415,38 +416,7 @@ export default function App() {
       )}
       {advisor && (
         <Modal title="Meet your next advantage" onClose={() => setAdvisor(false)}>
-          <div className="voice-coming">
-            <div className="voice-orb">
-              <Mic size={32} />
-            </div>
-            <span className="eyebrow">VOICE ADVISOR · COMING SOON</span>
-            <h3>
-              A conversation away
-              <br />
-              from your perfect plan.
-            </h3>
-            <p>
-              Tell us about your business, in your own words. Our voice advisor will help you find
-              your fit.
-            </p>
-            <div className="waveform">
-              {Array.from({ length: 24 }, (_, i) => (
-                <i key={i} style={{ height: 12 + ((i * 17) % 35) + 'px' }} />
-              ))}
-            </div>
-            <p className="muted">
-              For now, get the same thoughtful recommendations with a few quick questions.
-            </p>
-            <button
-              className="button primary"
-              onClick={() => {
-                setAdvisor(false);
-                navigate('/discover');
-              }}
-            >
-              Find my fit <ArrowRight size={17} />
-            </button>
-          </div>
+          <VoiceAdvisor />
         </Modal>
       )}
     </div>

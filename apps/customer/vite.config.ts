@@ -9,6 +9,7 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
+    proxy: { '/api/voice': { target: 'http://127.0.0.1:8787' } },
     watch: { ignored: ['**/android/**'] },
   },
   build: { sourcemap: false, target: 'es2022' },
