@@ -26,3 +26,4 @@ local.properties
 /AGENTS.md
 
 /infra-placeholder/aws-prototype-config.json
+.env.local
