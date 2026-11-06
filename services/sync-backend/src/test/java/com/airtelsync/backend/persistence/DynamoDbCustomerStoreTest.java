@@ -12,7 +12,7 @@ import static org.mockito.Mockito.*;
 class DynamoDbCustomerStoreTest {
     record Sample(String name) {}
     DynamoDbClient client = mock(DynamoDbClient.class);
-    DynamoDbCustomerStore store = new DynamoDbCustomerStore(client, "customers");
+    DynamoDbCustomerStore store = new DynamoDbCustomerStore(client, "customers", "orders", "activity");
     static AttributeValue s(String value) { return AttributeValue.builder().s(value).build(); }
     @Test void queriesUseOwnerKeyAndBoundedCursorWithoutScans() {
         when(client.query(any(QueryRequest.class))).thenReturn(QueryResponse.builder()
@@ -22,6 +22,7 @@ class DynamoDbCustomerStoreTest {
         assertEquals("example", page.items().getFirst().name()); assertEquals("ORDER#two", page.next());
         var captor = ArgumentCaptor.forClass(QueryRequest.class); verify(client).query(captor.capture());
         var request = captor.getValue();
+        assertEquals("orders", request.tableName());
         assertTrue(request.consistentRead()); assertEquals(10, request.limit());
         assertEquals("CUSTOMER#alice", request.expressionAttributeValues().get(":owner").s());
         assertEquals("CUSTOMER#alice", request.exclusiveStartKey().get("PK").s());
@@ -34,6 +35,9 @@ class DynamoDbCustomerStoreTest {
         var captor = ArgumentCaptor.forClass(TransactWriteItemsRequest.class);
         verify(client).transactWriteItems(captor.capture());
         var actions = captor.getValue().transactItems(); assertEquals(3, actions.size());
+        assertEquals("orders", actions.get(0).put().tableName());
+        assertEquals("customers", actions.get(1).put().tableName());
+        assertEquals("customers", actions.get(2).update().tableName());
         assertEquals("attribute_not_exists(PK)", actions.get(0).put().conditionExpression());
         assertEquals("5", actions.get(1).put().item().get("revision").n());
         assertEquals("revision = :expected", actions.get(1).put().conditionExpression());
@@ -56,5 +60,23 @@ class DynamoDbCustomerStoreTest {
         var captor = ArgumentCaptor.forClass(GetItemRequest.class); verify(client).getItem(captor.capture());
         assertEquals("CUSTOMER#bob", captor.getValue().key().get("PK").s());
         assertTrue(captor.getValue().consistentRead());
+    }
+    @Test void activityWritesAndQueriesUseActivityTable() {
+        store.transact("alice", List.of(CustomerStore.Write.create("NOTIFICATION#one", new Sample("notice"))));
+        var tx = ArgumentCaptor.forClass(TransactWriteItemsRequest.class); verify(client).transactWriteItems(tx.capture());
+        assertEquals("activity", tx.getValue().transactItems().getFirst().put().tableName());
+        when(client.query(any(QueryRequest.class))).thenReturn(QueryResponse.builder().build());
+        store.list("alice", "TICKET#", Sample.class, 10, null);
+        var query = ArgumentCaptor.forClass(QueryRequest.class); verify(client).query(query.capture());
+        assertEquals("activity", query.getValue().tableName());
+    }
+
+    @Test void singleTableConfigurationRemainsSupportedAndPlaceholdersAreRejected() {
+        var single = new DynamoDbCustomerStore(client, "one-table", "one-table", "one-table");
+        single.transact("alice", List.of(CustomerStore.Write.create("ORDER#one", new Sample("one"))));
+        var tx = ArgumentCaptor.forClass(TransactWriteItemsRequest.class); verify(client).transactWriteItems(tx.capture());
+        assertEquals("one-table", tx.getValue().transactItems().getFirst().put().tableName());
+        assertThrows(IllegalArgumentException.class, () -> new DynamoDbCustomerStore(client, "YOUR_CUSTOMERS_TABLE", "orders", "activity"));
+        assertThrows(IllegalArgumentException.class, () -> new DynamoDbCustomerStore(client, "", "orders", "activity"));
     }
 }

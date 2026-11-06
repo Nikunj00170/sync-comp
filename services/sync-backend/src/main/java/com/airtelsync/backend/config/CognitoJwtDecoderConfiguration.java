@@ -23,12 +23,18 @@ public class CognitoJwtDecoderConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(JwtDecoder.class)
-	JwtDecoder cognitoJwtDecoder(
+	JwtDecoder configuredJwtDecoder(
 		@Value("${COGNITO_ISSUER_URI:}") String issuerUri,
-		@Value("${COGNITO_CLIENT_ID:}") String clientId
-	) {
+		@Value("${COGNITO_CLIENT_ID:}") String clientId,
+        @Value("${COGNITO_USER_POOL_ID:}") String poolId,
+        @Value("${AWS_REGION:}") String region
+    ) {
+        return cognitoJwtDecoder(CognitoIssuer.resolve(issuerUri, poolId, region), clientId);
+    }
+
+    JwtDecoder cognitoJwtDecoder(String issuerUri, String clientId) {
 		if (issuerUri.isBlank() || clientId.isBlank()) {
-            log.warn("Cognito JWT authentication is unavailable: set both COGNITO_ISSUER_URI and COGNITO_CLIENT_ID");
+            log.warn("Cognito JWT authentication is unavailable: set COGNITO_CLIENT_ID and either COGNITO_USER_POOL_ID or COGNITO_ISSUER_URI");
 			return token -> {
 				throw new BadJwtException("Cognito JWT authentication is not configured");
 			};

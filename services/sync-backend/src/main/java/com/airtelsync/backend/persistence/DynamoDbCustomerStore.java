@@ -13,11 +13,25 @@ import java.util.*;
 @ConditionalOnProperty(name = "sync.storage", havingValue = "dynamodb")
 public class DynamoDbCustomerStore implements CustomerStore {
     private final DynamoDbClient client;
-    private final String table;
+    private final String customersTable;
+    private final String ordersTable;
+    private final String activityTable;
     private final ObjectMapper json = new ObjectMapper();
-    public DynamoDbCustomerStore(DynamoDbClient client, @Value("${SYNC_DYNAMODB_TABLE}") String table) {
-        if (table.isBlank()) throw new IllegalArgumentException("SYNC_DYNAMODB_TABLE is required");
-        this.client = client; this.table = table;
+    public DynamoDbCustomerStore(DynamoDbClient client,
+        @Value("${CUSTOMERS_TABLE:${SYNC_DYNAMODB_TABLE:}}") String customersTable,
+        @Value("${ORDERS_TABLE:${SYNC_DYNAMODB_TABLE:}}") String ordersTable,
+        @Value("${ACTIVITY_TABLE:${SYNC_DYNAMODB_TABLE:}}") String activityTable) {
+        for (String table : List.of(customersTable, ordersTable, activityTable)) {
+            if (table.isBlank() || table.contains("YOUR_"))
+                throw new IllegalArgumentException("Configure CUSTOMERS_TABLE, ORDERS_TABLE and ACTIVITY_TABLE, or SYNC_DYNAMODB_TABLE for single-table storage");
+        }
+        this.client = client; this.customersTable = customersTable;
+        this.ordersTable = ordersTable; this.activityTable = activityTable;
+    }
+    private String tableFor(String key) {
+        if (key.startsWith("ORDER#") || key.startsWith("INVOICE#") || key.startsWith("CHECKOUT#")) return ordersTable;
+        if (key.startsWith("TICKET#") || key.startsWith("NOTIFICATION#") || key.startsWith("AUDIT#")) return activityTable;
+        return customersTable;
     }
     private static AttributeValue text(String value) { return AttributeValue.builder().s(value).build(); }
     private static AttributeValue number(long value) { return AttributeValue.builder().n(Long.toString(value)).build(); }
@@ -25,12 +39,12 @@ public class DynamoDbCustomerStore implements CustomerStore {
         return Map.of("PK", text("CUSTOMER#" + subject), "SK", text(key));
     }
     public <T> Optional<Stored<T>> get(String subject, String key, Class<T> type) {
-        var item = client.getItem(GetItemRequest.builder().tableName(table).key(key(subject, key)).consistentRead(true).build()).item();
+        var item = client.getItem(GetItemRequest.builder().tableName(tableFor(key)).key(key(subject, key)).consistentRead(true).build()).item();
         return item.isEmpty() ? Optional.empty() : Optional.of(decode(item, type));
     }
     public <T> Page<T> list(String subject, String prefix, Class<T> type, int limit, String after) {
         CustomerStore.validatePage(prefix, limit, after);
-        var request = QueryRequest.builder().tableName(table).consistentRead(true).limit(limit)
+        var request = QueryRequest.builder().tableName(tableFor(prefix)).consistentRead(true).limit(limit)
             .keyConditionExpression("PK = :owner AND begins_with(SK, :prefix)")
             .expressionAttributeValues(Map.of(":owner", text("CUSTOMER#" + subject), ":prefix", text(prefix)));
         if (after != null) request.exclusiveStartKey(key(subject, after));
@@ -54,14 +68,14 @@ public class DynamoDbCustomerStore implements CustomerStore {
                 throw new IllegalArgumentException("Customer record is too large");
             if (write.expectedVersion() == null) {
                 // Atomic ADD avoids repeated revisions during concurrent unconditional saves.
-                operations.add(TransactWriteItem.builder().update(Update.builder().tableName(table).key(key(subject, write.key()))
+                operations.add(TransactWriteItem.builder().update(Update.builder().tableName(tableFor(write.key())).key(key(subject, write.key()))
                     .updateExpression("SET payload = :payload ADD revision :one")
                     .expressionAttributeValues(Map.of(":payload", text(payload), ":one", number(1))).build()).build());
             } else {
                 long version = write.expectedVersion();
                 var item = new HashMap<>(key(subject, write.key()));
                 item.put("payload", text(payload)); item.put("revision", number(version + 1));
-                var put = Put.builder().tableName(table).item(item);
+                var put = Put.builder().tableName(tableFor(write.key())).item(item);
                 if (version == 0) put.conditionExpression("attribute_not_exists(PK)");
                 else put.conditionExpression("revision = :expected").expressionAttributeValues(Map.of(":expected", number(version)));
                 operations.add(TransactWriteItem.builder().put(put.build()).build());

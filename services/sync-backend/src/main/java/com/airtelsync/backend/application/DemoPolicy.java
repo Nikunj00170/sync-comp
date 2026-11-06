@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class DemoPolicy {
     private final boolean enabled;
-    public DemoPolicy(@Value("${SYNC_DEMO_ENABLED:false}") boolean enabled) { this.enabled = enabled; }
+    private final String kycMode;
+    public DemoPolicy(@Value("${SYNC_DEMO_ENABLED:false}") boolean enabled,
+        @Value("${KYC_MODE:mock}") String kycMode) { this.enabled = enabled; this.kycMode = kycMode; }
     public void requireEnabled() {
-        if (!enabled) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "DEMO_DISABLED",
+        if (!enabled || !"mock".equals(kycMode)) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "DEMO_DISABLED",
             "Demo checkout and verification are disabled. No live purchase or verification provider is configured.");
     }
 }

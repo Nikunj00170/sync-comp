@@ -1,9 +1,9 @@
 name: Backend verification
 on:
   push:
-    paths: ['services/sync-backend/**', 'shared/data/catalogue.json', '.github/workflows/backend.yml']
+    paths: ['services/sync-backend/**', 'shared/data/catalogue.json', '.env.example', 'infra-placeholder/api/http-api-cors.json', '.github/workflows/backend.yml']
   pull_request:
-    paths: ['services/sync-backend/**', 'shared/data/catalogue.json', '.github/workflows/backend.yml']
+    paths: ['services/sync-backend/**', 'shared/data/catalogue.json', '.env.example', 'infra-placeholder/api/http-api-cors.json', '.github/workflows/backend.yml']
 permissions:
   contents: read
 jobs:

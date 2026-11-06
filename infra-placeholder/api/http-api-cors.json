@@ -12,8 +12,12 @@
   ],
   "AllowHeaders": [
     "authorization",
-    "content-type"
+    "content-type",
+    "idempotency-key"
   ],
   "AllowCredentials": false,
-  "MaxAge": 300
+  "MaxAge": 300,
+  "ExposeHeaders": [
+    "X-Next-Cursor"
+  ]
 }

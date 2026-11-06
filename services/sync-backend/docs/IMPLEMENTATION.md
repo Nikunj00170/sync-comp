@@ -114,3 +114,35 @@ canonical catalogue returned 25 products, protected profile requests returned JS
 401 with both missing and malformed bearer tokens, and ZIP inspection confirmed
 that test controllers and test JWT configuration are absent from the executable
 artifact. The temporary server was stopped after the check.
+
+## Environment alignment and PR preparation
+
+Merged current origin/main before preparing the PR, preserving the collaborator's
+workspace-date corrections and both sets of monetary/security regression tests.
+The merged baseline passed 173 tests. Auditing the root `.env.example` identified
+three DynamoDB tables, CloudFront, private S3 and HTTP API/Lambda hosting, which
+supersedes the earlier single-table-only packaging assumptions.
+
+Added an explicit `aws` profile, record routing across CUSTOMERS_TABLE,
+ORDERS_TABLE and ACTIVITY_TABLE, DOCUMENTS_BUCKET and FRONTEND_ORIGIN aliases,
+and Cognito issuer derivation from COGNITO_USER_POOL_ID/AWS_REGION. Cross-table
+checkout remains a single conditional transaction; the single-table override is
+retained. Mock KYC requires both KYC_MODE=mock and SYNC_DEMO_ENABLED=true.
+
+Added Lambda Web Adapter container packaging for Java 21 and documented the
+separate image-based function/API integration deployment. No cloud resource,
+provider secret or live deployment value was needed for code or PR preparation.
+The sales/voice provider flags remain disabled, and mock KYC does not call a live
+provider. Provider integrations are not claimed merely because env names exist.
+
+The AWS profile rejects accidental in-memory adapter overrides. Updated the API
+Gateway CORS reference to allow Idempotency-Key and expose X-Next-Cursor, matching
+checkout and pagination. Docker is still not running locally, so the Lambda image
+has not been built or deployed; the HTTP JAR and adapter configuration are tested
+separately from that remaining infrastructure verification.
+
+Environment-alignment verification: Java 21 clean verify passed 180 tests,
+0 failures, 0 errors, 0 skipped. The packaged JAR smoke checks passed after merging
+main and adding AWS configuration compatibility. OpenAPI references, API Gateway
+CORS JSON and git diff --check also passed. Actual Lambda image execution and
+Cognito/AWS end-to-end validation remain deployment tasks.

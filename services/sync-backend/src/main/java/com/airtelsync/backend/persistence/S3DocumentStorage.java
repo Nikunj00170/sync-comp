@@ -18,8 +18,8 @@ public class S3DocumentStorage implements DocumentStorage {
     private final S3Client client;
     private final S3Presigner presigner;
     private final String bucket;
-    public S3DocumentStorage(S3Client client, S3Presigner presigner, @Value("${SYNC_DOCUMENTS_BUCKET}") String bucket) {
-        if (bucket.isBlank()) throw new IllegalArgumentException("SYNC_DOCUMENTS_BUCKET is required");
+    public S3DocumentStorage(S3Client client, S3Presigner presigner, @Value("${SYNC_DOCUMENTS_BUCKET:${DOCUMENTS_BUCKET:}}") String bucket) {
+        if (bucket.isBlank() || bucket.contains("YOUR_")) throw new IllegalArgumentException("Configure DOCUMENTS_BUCKET or SYNC_DOCUMENTS_BUCKET");
         this.client = client; this.presigner = presigner; this.bucket = bucket;
     }
     public Upload authorize(String subject, String id, String key, String type, long size) {

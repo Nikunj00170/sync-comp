@@ -33,16 +33,22 @@ not loaded automatically by Spring.
 
 | Variable | Default / purpose |
 | --- | --- |
-| COGNITO_ISSUER_URI | Required to authenticate access tokens |
+| COGNITO_ISSUER_URI | Optional override; otherwise derived from COGNITO_USER_POOL_ID and AWS_REGION |
+| COGNITO_USER_POOL_ID | Existing Cognito pool ID |
 | COGNITO_CLIENT_ID | Required Cognito access-token client_id |
+| SPRING_PROFILES_ACTIVE | Set `aws` for DynamoDB/S3; omit for local memory |
+| KYC_MODE | `mock`; demo operations also require explicit opt-in |
 | SYNC_STORAGE | `memory`; set `dynamodb` for durable records |
 | SYNC_DOCUMENTS | `memory`; set `s3` for private document storage |
 | SYNC_DEMO_ENABLED | `false`; explicit opt-in for simulated checkout/KYC |
 | SYNC_PUBLIC_BASE_URL | `http://localhost:8080`; local upload URL origin |
-| SYNC_CORS_ALLOWED_ORIGINS | `http://localhost:5173,capacitor://localhost,http://localhost` |
+| FRONTEND_ORIGIN | Existing CloudFront origin; used for cloud CORS |
+| SYNC_CORS_ALLOWED_ORIGINS | Override FRONTEND_ORIGIN; local default `http://localhost:5173,capacitor://localhost,http://localhost` |
 | AWS_REGION | SDK region when AWS adapters are enabled |
-| SYNC_DYNAMODB_TABLE | Existing DynamoDB table name |
-| SYNC_DOCUMENTS_BUCKET | Existing private S3 bucket name |
+| CUSTOMERS_TABLE, ORDERS_TABLE, ACTIVITY_TABLE | Existing customer, order/invoice, and activity tables |
+| SYNC_DYNAMODB_TABLE | Optional single-table fallback |
+| DOCUMENTS_BUCKET | Existing private S3 bucket name |
+| SYNC_DOCUMENTS_BUCKET | Optional bucket-name override |
 | SERVER_PORT | Spring server port, defaults to 8080 |
 
 See [AWS setup and IAM requirements](docs/AWS.md). No AWS resources are provisioned
@@ -149,7 +155,9 @@ docker build -f services/sync-backend/Dockerfile -t sync-backend .
 docker run --rm -p 8080:8080 --env-file services/sync-backend/.env.example sync-backend
 ```
 
-The image uses Java 21 and a non-root runtime user. CI builds/tests backend changes
+The image uses Java 21 and a non-root runtime user. For the API Gateway/Lambda
+hosting described in the root environment example, use `Dockerfile.lambda` and
+follow [Lambda packaging and environment mapping](docs/AWS.md#api-gateway--lambda-packaging). CI builds/tests backend changes
 and canonical catalogue changes. Docker image execution has not been verified in
 this workspace because its Docker daemon is not running.
 
