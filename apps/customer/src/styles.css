@@ -5335,3 +5335,15 @@ html[data-reduce-motion='true'] .voice-sphere-core {
     letter-spacing: 1px;
   }
 }
+
+/* Preserve the native hidden contract when component display rules are applied. */
+[hidden] {
+  display: none !important;
+}
+.connection-gate {
+  max-width: 720px;
+  margin: 3rem auto;
+}
+.connection-gate h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}

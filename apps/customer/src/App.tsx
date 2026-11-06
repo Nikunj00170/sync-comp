@@ -38,7 +38,8 @@ const Verification = lazy(() => import('./pages/Verification'));
 const Billing = lazy(() => import('./pages/Billing'));
 const Support = lazy(() => import('./pages/Support'));
 const Account = lazy(() => import('./pages/Account'));
-import { finishSignIn } from './lib/auth';
+import { finishSignIn, signIn } from './lib/auth';
+import { useAction } from './lib/actions';
 const navigation = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
   { to: '/discover', label: 'Find my fit', icon: Sparkles },
@@ -50,7 +51,9 @@ const navigation = [
   { to: '/support', label: 'Help & support', icon: Headphones },
 ];
 export default function App() {
-  const { data, setData, storageError } = useWorkspace();
+  const { data, storageError, cloud, connection, connectionError, refresh, markRead } =
+    useWorkspace();
+  const { run, busy } = useAction();
   const notify = useNotify();
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,10 +80,10 @@ export default function App() {
     document.documentElement.dataset.reduceMotion = String(data.preferences.compactMotion);
   }, [data.preferences.compactMotion]);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has('code'))
+    if (['code', 'error'].some((key) => new URLSearchParams(window.location.search).has(key)))
       finishSignIn()
         .then(() => {
-          notify('Account sign-in complete. Your customer workspace is still in demo mode.');
+          notify('Account sign-in complete. Loading your customer workspace.');
           navigate('/account');
         })
         .catch((e) => notify(e.message));
@@ -216,7 +219,7 @@ export default function App() {
               <kbd aria-hidden="true">⌘ K</kbd>
             </button>
             <span className="demo-pill">
-              <span /> Demo workspace
+              <span /> {cloud ? 'Cloud workspace' : 'Demo workspace'}
             </span>
             <button
               className="icon-button bell-button"
@@ -259,39 +262,85 @@ export default function App() {
               </div>
             }
           >
-            <Routes>
-              <Route path="/" element={<Dashboard onAdvisor={() => setAdvisor(true)} />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:id" element={<Orders />} />
-              <Route path="/verification" element={<Verification />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/account" element={<Account />} />
-              <Route
-                path="*"
-                element={
-                  <div className="empty-state">
-                    <Package size={40} />
-                    <h1>Let’s get you back on track.</h1>
-                    <p>We couldn’t find this page.</p>
-                    <Link className="button primary" to="/">
-                      Back to overview
+            {cloud && connection !== 'ready' && location.pathname !== '/account' ? (
+              <section
+                className="panel connection-gate"
+                role={connection === 'error' ? 'alert' : 'status'}
+              >
+                <h1>
+                  {connection === 'loading'
+                    ? 'Loading your customer workspace…'
+                    : connection === 'error'
+                      ? 'Your workspace could not be loaded'
+                      : 'Sign in to your customer workspace'}
+                </h1>
+                <p>
+                  {connectionError ||
+                    'Your business records are loaded securely from the customer API.'}
+                </p>
+                {connection !== 'loading' && (
+                  <div className="button-row">
+                    <button
+                      className="button primary"
+                      disabled={busy}
+                      onClick={() => void run(signIn)}
+                    >
+                      Sign in with Cognito
+                    </button>
+                    {connection === 'error' && (
+                      <button
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => void run(refresh)}
+                      >
+                        Try again
+                      </button>
+                    )}
+                    <Link className="text-button" to="/account">
+                      Account & settings
                     </Link>
                   </div>
-                }
-              />
-            </Routes>
+                )}
+              </section>
+            ) : (
+              <Routes>
+                <Route path="/" element={<Dashboard onAdvisor={() => setAdvisor(true)} />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/discover" element={<Discover />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<Orders />} />
+                <Route path="/verification" element={<Verification />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/support" element={<Support />} />
+                <Route path="/account" element={<Account />} />
+                <Route
+                  path="*"
+                  element={
+                    <div className="empty-state">
+                      <Package size={40} />
+                      <h1>Let’s get you back on track.</h1>
+                      <p>We couldn’t find this page.</p>
+                      <Link className="button primary" to="/">
+                        Back to overview
+                      </Link>
+                    </div>
+                  }
+                />
+              </Routes>
+            )}
           </Suspense>
           <footer className="page-footer">
             <span>
               <span className="red-dot" /> Accel Telecom <span className="footer-divider">/</span>{' '}
               Made for what’s next.
             </span>
-            <span>Demo workspace · Fictional case products · No real purchases</span>
+            <span>
+              {cloud
+                ? 'Cloud workspace · Fictional case products · No real purchases'
+                : 'Demo workspace · Fictional case products · No real purchases'}
+            </span>
           </footer>
         </main>
       </div>
@@ -369,11 +418,9 @@ export default function App() {
             <span className="muted">{unread} unread updates</span>
             <button
               className="text-button"
+              disabled={busy}
               onClick={() =>
-                setData((d) => ({
-                  ...d,
-                  notifications: d.notifications.map((x) => ({ ...x, read: true })),
-                }))
+                void run(() => markRead(data.notifications.filter((x) => !x.read).map((x) => x.id)))
               }
             >
               <CheckCheck size={16} /> Mark all read
@@ -384,16 +431,14 @@ export default function App() {
               <button
                 className={x.read ? '' : 'unread'}
                 key={x.id}
-                onClick={() => {
-                  setData((d) => ({
-                    ...d,
-                    notifications: d.notifications.map((n) =>
-                      n.id === x.id ? { ...n, read: true } : n,
-                    ),
-                  }));
-                  setBell(false);
-                  navigate(x.route);
-                }}
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await markRead([x.id]);
+                    setBell(false);
+                    navigate(x.route);
+                  })
+                }
               >
                 <span className="notification-icon">
                   <Bell size={18} />
@@ -416,7 +461,7 @@ export default function App() {
       )}
       {advisor && (
         <Modal title="Meet your next advantage" onClose={() => setAdvisor(false)}>
-          <VoiceAdvisor />
+          <VoiceAdvisor onApplied={() => setAdvisor(false)} />
         </Modal>
       )}
     </div>

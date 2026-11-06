@@ -29,7 +29,7 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { downloadCalendar } from '../lib/downloads';
 export default function Orders() {
-  const { data, setData } = useWorkspace(),
+  const { data, setData, cloud, cancel: cancelRemote } = useWorkspace(),
     notify = useNotify();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -195,7 +195,7 @@ export default function Orders() {
                 <MapPin size={18} />
                 <span>{order.address}</span>
               </div>
-              {!['active', 'cancelled'].includes(order.status) && (
+              {!cloud && !['active', 'cancelled'].includes(order.status) && (
                 <button
                   className="button secondary full"
                   onClick={() => {
@@ -233,6 +233,7 @@ export default function Orders() {
               <span className="eyebrow">DEMO CONTROLS</span>
               <p>Explore how the timeline changes. No real order is affected.</p>
               <button
+                hidden={cloud}
                 className="button secondary full"
                 disabled={['active', 'cancelled'].includes(order.status)}
                 onClick={() => {
@@ -315,13 +316,9 @@ export default function Orders() {
               </button>
               <button
                 className="button primary"
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    const updated = cancelOrder(order);
-                    setData((d) => ({
-                      ...d,
-                      orders: d.orders.map((x) => (x.id === id ? updated : x)),
-                    }));
+                    await cancelRemote(order.id);
                     setCancel(false);
                     notify('Demo order cancelled.');
                   } catch (e) {

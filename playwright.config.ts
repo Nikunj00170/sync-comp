@@ -8,7 +8,7 @@ export default defineConfig({
     timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    channel: 'chrome',
+    channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
   },
   projects: [
     {
@@ -19,6 +19,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
+    env: { VITE_API_BASE_URL: '', VITE_VOICE_API_BASE_URL: '' },
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,

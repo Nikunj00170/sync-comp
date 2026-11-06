@@ -11,37 +11,22 @@ import {
   Trash2,
 } from 'lucide-react';
 import { makeOrder, money, productById, quote, removeFromCart } from '@sync/domain';
+import { useQuote } from '../lib/useQuote';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 export default function Checkout() {
-  const { data, setData } = useWorkspace(),
+  const { data, setData, cloud, placeOrder } = useWorkspace(),
     notify = useNotify(),
     navigate = useNavigate();
   const [accepted, setAccepted] = useState(false),
     [busy, setBusy] = useState(false);
-  const q = quote(data.cart, data.profile);
-  function place() {
+  const { quote: q, error: quoteError, retry } = useQuote();
+  async function place() {
     if (busy) return;
     try {
       if (!accepted) throw new Error('Please confirm this is a demo order.');
       setBusy(true);
-      const order = makeOrder(data.cart, data.profile, data.kyc);
-      setData((d) => ({
-        ...d,
-        cart: [],
-        orders: [order, ...d.orders],
-        notifications: [
-          {
-            id: order.id,
-            title: 'Your demo order is in',
-            text: order.name + ' is ready to track.',
-            route: '/orders/' + order.id,
-            read: false,
-            createdAt: new Date().toISOString(),
-          },
-          ...d.notifications,
-        ],
-      }));
+      const order = await placeOrder();
       notify('Your demo order is saved. Let’s get you connected.');
       navigate('/orders/' + order.id);
     } catch (e) {
@@ -49,6 +34,18 @@ export default function Checkout() {
       setBusy(false);
     }
   }
+  if (!q)
+    return (
+      <section className="panel" role={quoteError ? 'alert' : 'status'}>
+        <h1>Your bundle quotation</h1>
+        <p>{quoteError || 'Calculating your quotation with the customer API…'}</p>
+        {quoteError && (
+          <button className="button secondary" onClick={retry}>
+            Try again
+          </button>
+        )}
+      </section>
+    );
   if (!data.cart.length)
     return (
       <div className="empty-state">
@@ -180,6 +177,7 @@ export default function Checkout() {
             <label className="form-field">
               Installation address
               <textarea
+                readOnly={cloud}
                 value={data.profile.address}
                 onChange={(e) =>
                   setData((d) => ({ ...d, profile: { ...d.profile, address: e.target.value } }))
@@ -187,6 +185,11 @@ export default function Checkout() {
                 placeholder="Add your complete business address"
               />
             </label>
+            {cloud && (
+              <Link className="text-button" to="/account">
+                Update your address in Account & settings
+              </Link>
+            )}
           </section>
         </div>
         <aside className="panel checkout-summary">

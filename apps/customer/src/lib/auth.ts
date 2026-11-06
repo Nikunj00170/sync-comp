@@ -1,26 +1,5 @@
 import { Capacitor } from '@capacitor/core';
 import { UserManager, WebStorageStateStore, type StateStore } from 'oidc-client-ts';
-class MemoryStorage implements Storage {
-  private items = new Map<string, string>();
-  get length() {
-    return this.items.size;
-  }
-  clear() {
-    this.items.clear();
-  }
-  getItem(k: string) {
-    return this.items.get(k) ?? null;
-  }
-  key(i: number) {
-    return [...this.items.keys()][i] ?? null;
-  }
-  removeItem(k: string) {
-    this.items.delete(k);
-  }
-  setItem(k: string, v: string) {
-    this.items.set(k, v);
-  }
-}
 let manager: UserManager | undefined;
 export function authManager() {
   const authority = import.meta.env.VITE_COGNITO_AUTHORITY;
@@ -36,9 +15,9 @@ export function authManager() {
       redirect_uri: import.meta.env.VITE_REDIRECT_URI || location.origin + '/',
       post_logout_redirect_uri: import.meta.env.VITE_LOGOUT_URI || location.origin + '/',
       response_type: 'code',
-      scope: 'openid email',
-      automaticSilentRenew: false,
-      userStore: new WebStorageStateStore({ store: new MemoryStorage() }) as StateStore,
+      scope: import.meta.env.VITE_OIDC_SCOPE || 'openid email',
+      automaticSilentRenew: true,
+      userStore: new WebStorageStateStore({ store: sessionStorage }) as StateStore,
     });
   return manager;
 }
@@ -77,4 +56,21 @@ export async function signOut() {
   url.searchParams.set('logout_uri', m.settings.post_logout_redirect_uri || location.origin + '/');
   await m.removeUser();
   location.assign(url.toString());
+}
+
+/** Access tokens, never ID tokens, authenticate API operations. Refresh before expiry. */
+export async function accessToken() {
+  const manager = authManager();
+  let user = await manager.getUser();
+  if (user && (user.expires_in ?? 0) < 60) {
+    try {
+      user = await manager.signinSilent();
+    } catch {
+      await manager.removeUser();
+      throw new Error('Your session expired. Please sign in again.');
+    }
+  }
+  if (!user || user.expired || !user.access_token)
+    throw new Error('Please sign in to your customer account.');
+  return user.access_token;
 }

@@ -49,6 +49,7 @@ public class CognitoJwtTestConfiguration {
 	}
 
 	@Bean
+    @org.springframework.context.annotation.Primary
 	public JwtDecoder testJwtDecoder() {
 		NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey(PUBLIC_KEY).build();
 		decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(

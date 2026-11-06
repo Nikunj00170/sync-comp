@@ -18,9 +18,17 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { download } from '../lib/downloads';
 import { authManager, signIn, signOut } from '../lib/auth';
-import { customerApi } from '../lib/api';
+import { useAction } from '../lib/actions';
 export default function Account() {
-  const { data, setData, reset } = useWorkspace(),
+  const {
+      data,
+      setData,
+      reset,
+      cloud,
+      connection: accountStatus,
+      refresh,
+      saveProfile,
+    } = useWorkspace(),
     notify = useNotify();
   const [profile, setProfile] = useState<Profile>({ ...data.profile }),
     [confirm, setConfirm] = useState(false),
@@ -28,7 +36,8 @@ export default function Account() {
     [connection, setConnection] = useState(''),
     [busy, setBusy] = useState(false);
   useEffect(() => setProfile({ ...data.profile }), [data.profile]);
-  function save(e: React.FormEvent) {
+  const action = useAction();
+  async function save(e: React.FormEvent) {
     e.preventDefault();
     const parsed = profileSchema.safeParse(profile);
     if (!parsed.success) {
@@ -36,8 +45,14 @@ export default function Account() {
       return;
     }
     setError('');
-    setData((d) => ({ ...d, profile: parsed.data }));
-    notify('Your demo business profile is saved.');
+    await action.run(async () => {
+      await saveProfile(parsed.data);
+      notify(
+        cloud
+          ? 'Your business profile is saved to your account.'
+          : 'Your demo business profile is saved.',
+      );
+    });
   }
   async function checkConnection() {
     try {
@@ -47,7 +62,7 @@ export default function Account() {
         throw new Error(
           'Sign in to your Cognito account first. The demo workspace remains available without sign-in.',
         );
-      await customerApi.profile(user.access_token);
+      await refresh();
       setConnection('Customer API responded successfully.');
     } catch (e) {
       setConnection((e as Error).message);
@@ -65,7 +80,7 @@ export default function Account() {
           </h1>
           <p>Keep your details up to date and your experience just right.</p>
         </div>
-        <span className="badge neutral">LOCAL DEMO PROFILE</span>
+        <span className="badge neutral">{cloud ? 'CUSTOMER PROFILE' : 'LOCAL DEMO PROFILE'}</span>
       </div>
       <div className="account-layout">
         <div>
@@ -108,6 +123,79 @@ export default function Account() {
                   onChange={(e) => setProfile((p) => ({ ...p, employees: Number(e.target.value) }))}
                 />
               </label>
+              <label className="form-field">
+                Industry
+                <select
+                  value={profile.industry}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, industry: e.target.value as Profile['industry'] }))
+                  }
+                >
+                  {['professional', 'retail', 'manufacturing', 'hospitality'].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                City tier
+                <select
+                  value={profile.tier}
+                  onChange={(e) => setProfile((p) => ({ ...p, tier: Number(e.target.value) }))}
+                >
+                  <option value={1}>Tier 1</option>
+                  <option value={2}>Tier 2</option>
+                </select>
+              </label>
+              <label className="form-field">
+                Locations
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={profile.sites}
+                  onChange={(e) => setProfile((p) => ({ ...p, sites: Number(e.target.value) }))}
+                />
+              </label>
+              <label className="form-field">
+                Monthly budget (INR)
+                <input
+                  type="number"
+                  min={500}
+                  max={1000000}
+                  value={profile.budget}
+                  onChange={(e) => setProfile((p) => ({ ...p, budget: Number(e.target.value) }))}
+                />
+              </label>
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={profile.hasGstin}
+                  onChange={(e) => setProfile((p) => ({ ...p, hasGstin: e.target.checked }))}
+                />
+                GST registered
+              </label>
+              <fieldset className="form-field">
+                <legend>Business priorities</legend>
+                {['productivity', 'security', 'reliability', 'growth'].map((priority) => (
+                  <label className="check-label" key={priority}>
+                    <input
+                      type="checkbox"
+                      checked={profile.priorities.includes(priority)}
+                      onChange={(e) =>
+                        setProfile((p) => ({
+                          ...p,
+                          priorities: e.target.checked
+                            ? [...p.priorities, priority]
+                            : p.priorities.filter((x) => x !== priority),
+                        }))
+                      }
+                    />
+                    {priority}
+                  </label>
+                ))}
+              </fieldset>
               <label className="form-field span-two">
                 Business address
                 <textarea
@@ -121,7 +209,11 @@ export default function Account() {
                 {error}
               </p>
             )}
-            <button className="button primary" type="submit">
+            <button
+              className="button primary"
+              type="submit"
+              disabled={action.busy || (cloud && accountStatus !== 'ready')}
+            >
               <Save size={16} /> Save profile
             </button>
           </form>
@@ -178,8 +270,9 @@ export default function Account() {
             </span>
             <h2>Your data, in your hands.</h2>
             <p className="muted">
-              This demo uses sample data saved in your browser. Document file contents are never
-              saved. You can take a copy or start fresh.
+              {cloud
+                ? 'Your account records are stored by the customer API. Uploaded documents use private storage. You may export the records currently shown.'
+                : 'This demo uses sample data saved in your browser. Document file contents are never saved. You can take a copy or start fresh.'}
             </p>
             <button
               className="button secondary full"
@@ -194,7 +287,11 @@ export default function Account() {
             >
               <Download size={16} /> Export demo workspace
             </button>
-            <button className="text-button danger full center" onClick={() => setConfirm(true)}>
+            <button
+              className="text-button danger full center"
+              hidden={cloud}
+              onClick={() => setConfirm(true)}
+            >
               <RotateCcw size={15} /> Reset demo workspace
             </button>
           </section>
@@ -204,8 +301,9 @@ export default function Account() {
             </span>
             <h2>Your live account</h2>
             <p className="muted">
-              Cognito sign-in is separate from your demo workspace. Your live customer data appears
-              after the customer API is connected.
+              {cloud
+                ? 'Sign in to load your customer records. Failed requests never fall back to demo data.'
+                : 'This build is using the local demo. Configure VITE_API_BASE_URL and Cognito to use your customer account.'}
             </p>
             <button
               className="button secondary full"
@@ -227,6 +325,15 @@ export default function Account() {
             >
               Sign out of live account
             </button>
+            {cloud && (
+              <p className="connection-message" role="status">
+                {accountStatus === 'ready'
+                  ? 'Customer API connected.'
+                  : accountStatus === 'loading'
+                    ? 'Loading account…'
+                    : 'Sign in to load your account.'}
+              </p>
+            )}
             {connection && (
               <p className="connection-message" role="status">
                 {connection}

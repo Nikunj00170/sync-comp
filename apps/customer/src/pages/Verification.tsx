@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -15,61 +15,75 @@ import {
 } from 'lucide-react';
 import { makeId, type DocumentMeta } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
+import { useAction } from '../lib/actions';
 import { useNotify } from '../lib/feedback';
 export default function Verification() {
-  const { data, setData } = useWorkspace(),
+  const {
+      data,
+      setData,
+      cloud,
+      saveKyc,
+      verify: verifyKyc,
+      upload,
+      removeDocument,
+      reservations,
+    } = useWorkspace(),
     notify = useNotify();
   const input = useRef<HTMLInputElement>(null);
   const k = data.kyc;
+  const [consentDraft, setConsentDraft] = useState<boolean | undefined>();
+  const { run, busy } = useAction();
   function files(list: FileList | null) {
     if (!list) return;
-    const valid: DocumentMeta[] = [];
-    for (const file of [...list]) {
-      if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)) {
-        notify(file.name + ': choose a PDF, PNG or JPEG.');
-        continue;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        notify(file.name + ': maximum file size is 10 MB.');
-        continue;
-      }
-      valid.push({
-        id: makeId('DOC'),
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        uploadedAt: new Date().toISOString(),
-      });
-    }
-    setData((d) => ({
-      ...d,
-      kyc: { ...d.kyc, documents: [...d.kyc.documents, ...valid].slice(0, 8) },
-    }));
-    if (valid.length)
-      notify('Document details saved in your demo workspace. File contents were not uploaded.');
-    if (input.current) input.current.value = '';
+    const selected = [...list];
+    void run(async () => {
+      for (const file of selected) await upload(file);
+      notify(
+        cloud
+          ? 'Documents uploaded securely to your account.'
+          : 'Document details saved in your demo workspace. File contents were not uploaded.',
+      );
+      if (input.current) input.current.value = '';
+    });
   }
   function verify() {
-    if (!k.provider || !k.consent || k.documents.length < 2) return;
-    setData((d) => ({
-      ...d,
-      kyc: { ...d.kyc, status: 'demo_verified', verifiedAt: new Date().toISOString() },
-      notifications: [
-        {
-          id: makeId('N'),
-          title: 'Demo verification complete',
-          text: 'Your mock business verification is complete. You can now try demo checkout.',
-          route: '/verification',
-          read: false,
-          createdAt: new Date().toISOString(),
-        },
-        ...d.notifications,
-      ],
-    }));
-    notify('Demo verification complete. Your next step is ready.');
+    void run(async () => {
+      await verifyKyc();
+      notify('Demo verification complete. Your next step is ready.');
+    });
   }
   return (
     <>
+      {cloud && (
+        <p className="notice">
+          Files are uploaded privately. Verification is a simulation and requires the backend demo
+          setting.
+        </p>
+      )}
+      {cloud && reservations.some((doc) => doc.status !== 'uploaded') && (
+        <section className="panel">
+          <h2>Pending uploads</h2>
+          <p>
+            Remove an abandoned reservation to free a document slot, then select the file again.
+          </p>
+          {reservations
+            .filter((doc) => doc.status !== 'uploaded')
+            .map((doc) => (
+              <div className="section-inline" key={doc.id}>
+                <span>
+                  {doc.name} · {doc.status}
+                </span>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => void run(() => removeDocument(doc.id))}
+                >
+                  Remove pending upload
+                </button>
+              </div>
+            ))}
+        </section>
+      )}
       <div className="page-heading">
         <div>
           <span className="eyebrow">A SIMPLER START.</span>
@@ -100,9 +114,8 @@ export default function Verification() {
             </Link>
             <button
               className="button secondary"
-              onClick={() =>
-                setData((d) => ({ ...d, kyc: { ...d.kyc, status: 'pending', consent: false } }))
-              }
+              disabled={busy}
+              onClick={() => void run(() => saveKyc(k.provider, false))}
             >
               Review demo documents
             </button>
@@ -139,7 +152,8 @@ export default function Verification() {
                   <button
                     className={'provider-card ' + (k.provider === p.id ? 'selected' : '')}
                     key={p.id}
-                    onClick={() => setData((d) => ({ ...d, kyc: { ...d.kyc, provider: p.id } }))}
+                    disabled={busy}
+                    onClick={() => void run(() => saveKyc(p.id, false))}
                     aria-pressed={k.provider === p.id}
                   >
                     <span className={'provider-logo ' + p.id}>
@@ -165,6 +179,7 @@ export default function Verification() {
                 </div>
                 <button
                   className="text-button"
+                  hidden={cloud}
                   onClick={() => {
                     setData((d) => ({
                       ...d,
@@ -235,15 +250,8 @@ export default function Verification() {
                     <button
                       className="icon-button"
                       aria-label={'Remove ' + d.name}
-                      onClick={() =>
-                        setData((s) => ({
-                          ...s,
-                          kyc: {
-                            ...s.kyc,
-                            documents: s.kyc.documents.filter((x) => x.id !== d.id),
-                          },
-                        }))
-                      }
+                      disabled={busy}
+                      onClick={() => void run(() => removeDocument(d.id))}
                     >
                       <Trash2 size={17} />
                     </button>
@@ -257,10 +265,19 @@ export default function Verification() {
               <label className="check-label consent-block">
                 <input
                   type="checkbox"
-                  checked={k.consent}
-                  onChange={(e) =>
-                    setData((d) => ({ ...d, kyc: { ...d.kyc, consent: e.target.checked } }))
-                  }
+                  checked={consentDraft ?? k.consent}
+                  disabled={busy || !k.provider}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setConsentDraft(checked);
+                    void run(async () => {
+                      try {
+                        await saveKyc(k.provider, checked);
+                      } finally {
+                        setConsentDraft(undefined);
+                      }
+                    });
+                  }}
                 />
                 <span>
                   I consent to this simulated verification of the document details in my demo
@@ -269,7 +286,7 @@ export default function Verification() {
               </label>
               <button
                 className="button primary"
-                disabled={!k.provider || !k.consent || k.documents.length < 2}
+                disabled={busy || !k.provider || !k.consent || k.documents.length < 2}
                 onClick={verify}
               >
                 Complete demo verification <ArrowRight size={17} />

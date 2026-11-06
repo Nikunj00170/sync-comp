@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { money, productById, profileSchema, recommendations, type Profile } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
+import { useAction } from '../lib/actions';
+import type { Recommendation } from '../lib/api';
 import { useNotify } from '../lib/feedback';
 const priorities = [
   {
@@ -43,12 +45,15 @@ const priorities = [
   },
 ];
 export default function Discover() {
-  const { data, setData } = useWorkspace(),
+  const { data, setData, cloud, saveProfile, matches } = useWorkspace(),
     notify = useNotify(),
     navigate = useNavigate();
+  const { run, busy } = useAction();
+  const [remoteMatches, setMatches] = useState<Recommendation[]>([]);
   const [step, setStep] = useState(Math.min(data.draftStep, 3));
   const [profile, setProfile] = useState<Profile>(() => {
     try {
+      if (cloud) return { ...data.profile };
       const saved = JSON.parse(localStorage.getItem('airtel-sync:discovery') || 'null');
       if (saved && typeof saved === 'object' && Array.isArray(saved.priorities))
         return { ...data.profile, ...saved };
@@ -59,12 +64,13 @@ export default function Discover() {
   const [result, setResult] = useState(false);
   useEffect(() => {
     try {
+      if (cloud) return;
       localStorage.setItem('airtel-sync:discovery', JSON.stringify(profile));
     } catch {}
   }, [profile]);
   const update = (key: keyof Profile, value: unknown) =>
     setProfile((p) => ({ ...p, [key]: value }));
-  function next() {
+  async function next() {
     const stepSchema =
       step === 0
         ? profileSchema.pick({
@@ -89,8 +95,11 @@ export default function Discover() {
     }
     setErrors({});
     if (step === 2) {
-      setData((d) => ({ ...d, profile: profileSchema.parse(profile), draftStep: 0 }));
-      setResult(true);
+      await run(async () => {
+        await saveProfile(profileSchema.parse(profile));
+        if (cloud) setMatches(await matches());
+        setResult(true);
+      });
     } else {
       setStep((s) => s + 1);
       setData((d) => ({ ...d, draftStep: step + 1 }));
@@ -108,7 +117,7 @@ export default function Discover() {
     </label>
   );
   if (result) {
-    const bundles = recommendations(data.profile);
+    const bundles = cloud ? remoteMatches : recommendations(data.profile);
     return (
       <>
         <div className="page-heading">
@@ -367,7 +376,7 @@ export default function Discover() {
             >
               <ArrowLeft size={16} /> Back
             </button>
-            <button className="button primary" onClick={next}>
+            <button className="button primary" disabled={busy} onClick={() => void next()}>
               {step === 2 ? 'See my matches' : 'Continue'} <ArrowRight size={16} />
             </button>
           </div>

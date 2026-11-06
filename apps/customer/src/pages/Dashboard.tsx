@@ -281,49 +281,59 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
           </section>
         </div>
         <aside className="dashboard-aside">
-          <section className="panel bill-peek">
-            <div className="section-heading">
-              <h2>One bill. Zero juggling.</h2>
-              <span className="round-icon">
-                <FileText size={18} />
-              </span>
-            </div>
-            <p>Every service, neatly in one place.</p>
-            <div className="bill-amount">
-              <small>{invoice.period.toUpperCase()}</small>
-              <strong>{money(invoice.total)}</strong>
-              <span className={'badge ' + (invoice.status === 'paid' ? 'success' : 'amber')}>
-                {invoice.status === 'paid'
-                  ? 'Paid in demo'
-                  : 'Due ' +
-                    new Date(invoice.dueAt).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-              </span>
-            </div>
-            <div className="bill-breakdown">
-              <span>
-                Service charges <strong>{money(invoice.subtotal)}</strong>
-              </span>
-              <span>
-                Illustrative tax <strong>{money(invoice.tax)}</strong>
-              </span>
-            </div>
-            <Link className="button primary full" to="/billing">
-              View your bill <ArrowRight size={16} />
-            </Link>
-            <button
-              className="text-button full center"
-              onClick={() =>
-                downloadInvoice(invoice, data.profile).catch(() =>
-                  notify('Could not generate the PDF. Please try again.'),
-                )
-              }
-            >
-              <Download size={15} /> Download demo invoice
-            </button>
-          </section>
+          {invoice ? (
+            <section className="panel bill-peek">
+              <div className="section-heading">
+                <h2>One bill. Zero juggling.</h2>
+                <span className="round-icon">
+                  <FileText size={18} />
+                </span>
+              </div>
+              <p>Every service, neatly in one place.</p>
+              <div className="bill-amount">
+                <small>{invoice.period.toUpperCase()}</small>
+                <strong>{money(invoice.total)}</strong>
+                <span className={'badge ' + (invoice.status === 'paid' ? 'success' : 'amber')}>
+                  {invoice.status === 'paid'
+                    ? 'Paid in demo'
+                    : 'Due ' +
+                      new Date(invoice.dueAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                </span>
+              </div>
+              <div className="bill-breakdown">
+                <span>
+                  Service charges <strong>{money(invoice.subtotal)}</strong>
+                </span>
+                <span>
+                  Illustrative tax <strong>{money(invoice.tax)}</strong>
+                </span>
+              </div>
+              <Link className="button primary full" to="/billing">
+                View your bill <ArrowRight size={16} />
+              </Link>
+              <button
+                className="text-button full center"
+                onClick={() =>
+                  downloadInvoice(invoice, data.profile).catch(() =>
+                    notify('Could not generate the PDF. Please try again.'),
+                  )
+                }
+              >
+                <Download size={15} /> Download demo invoice
+              </button>
+            </section>
+          ) : (
+            <section className="panel">
+              <h2>No invoices yet</h2>
+              <p>Your account invoices will appear here after an order.</p>
+              <Link to="/plans" className="button secondary">
+                Explore plans
+              </Link>
+            </section>
+          )}
           <section className="insight-card">
             <span className="insight-icon">
               <Zap size={20} />

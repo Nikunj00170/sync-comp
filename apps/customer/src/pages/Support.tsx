@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { makeId } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
+import { useAction } from '../lib/actions';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 const faqs = [
@@ -48,7 +49,7 @@ const faqs = [
   },
 ];
 export default function Support() {
-  const { data, setData } = useWorkspace(),
+  const { data, cloud, createTicket, resolveTicket } = useWorkspace(),
     notify = useNotify();
   const [search, setSearch] = useState(''),
     [open, setOpen] = useState<number | null>(0),
@@ -56,25 +57,24 @@ export default function Support() {
     [subject, setSubject] = useState(''),
     [category, setCategory] = useState('Connectivity'),
     [description, setDescription] = useState('');
-  function submit(e: React.FormEvent) {
+  const { run, busy } = useAction();
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (subject.trim().length < 5 || description.trim().length < 12) {
       notify('Add a subject of at least 5 characters and a description of at least 12.');
       return;
     }
-    const ticket = {
-      id: makeId('HELP'),
-      subject: subject.trim(),
-      category,
-      description: description.trim(),
-      status: 'open' as const,
-      createdAt: new Date().toISOString(),
-    };
-    setData((d) => ({ ...d, tickets: [ticket, ...d.tickets] }));
-    setCreate(false);
-    setSubject('');
-    setDescription('');
-    notify('Your demo support request is saved. No message was sent externally.');
+    await run(async () => {
+      await createTicket({ subject: subject.trim(), category, description: description.trim() });
+      setCreate(false);
+      setSubject('');
+      setDescription('');
+      notify(
+        cloud
+          ? 'Your support request is saved to your account.'
+          : 'Your demo support request is saved. No message was sent externally.',
+      );
+    });
   }
   return (
     <>
@@ -148,7 +148,9 @@ export default function Support() {
             </span>
             <h2>Your support requests</h2>
             <p className="muted small">
-              Saved locally in this demo. No email or message is sent to a support team.
+              {cloud
+                ? 'Support requests are saved securely to your customer account.'
+                : 'Saved locally in this demo. No email or message is sent to a support team.'}
             </p>
             {data.tickets.length ? (
               <div className="ticket-list">
@@ -165,15 +167,13 @@ export default function Support() {
                     {t.status === 'open' && (
                       <button
                         className="text-button"
-                        onClick={() => {
-                          setData((d) => ({
-                            ...d,
-                            tickets: d.tickets.map((x) =>
-                              x.id === t.id ? { ...x, status: 'resolved' } : x,
-                            ),
-                          }));
-                          notify('Demo request marked resolved.');
-                        }}
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await resolveTicket(t.id);
+                            notify('Request marked resolved.');
+                          })
+                        }
                       >
                         Mark resolved
                       </button>
@@ -235,7 +235,7 @@ export default function Support() {
             <p className="muted small">
               This saves a local demo request. It does not contact a real support team.
             </p>
-            <button type="submit" className="button primary full">
+            <button type="submit" disabled={busy} className="button primary full">
               Save demo request <ArrowRight size={17} />
             </button>
           </form>

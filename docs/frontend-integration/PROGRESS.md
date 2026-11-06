@@ -23,3 +23,28 @@ Spring/React flow plus existing demo/assistant on desktop and mobile, then add
 English/Hindi and additional translated UI with a persistent language selector.
 Live AWS/Cognito/provider tests require configured infrastructure; local integration
 will use real JWT signatures and Spring HTTP endpoints with test-only signing keys.
+
+## Phase 2: frontend/API integration
+
+Implemented API-backed profiles, saved recommendations, server checkout quotes,
+idempotent orders, invoices, document-byte upload/completion and pending-reservation
+cleanup, KYC consent/demo verification, tickets/resolution and notification reads.
+Collections follow all pagination cursors. Access tokens renew through OIDC, stay
+in sessionStorage (never localStorage), and logout/account changes clear records.
+Configured cloud mode never seeds or persists the local demo workspace. Local
+cart/preferences remain separate from server-owned records; unsupported cloud
+payment, rescheduling and subscription simulation controls cannot change records.
+
+Assistant suggestions can populate a bundle only after canonical product,
+quantity, eligibility and quote checks; model-supplied prices never set checkout
+totals. Voice recording/session cleanup remains intact. A separately configured
+voice API URL supports deployments without leaking Cognito credentials to it.
+
+Verification: production build, 19 unit tests and the 16 existing desktop/mobile
+browser tests passed. Six additional desktop/mobile full-stack tests passed using
+an actual Spring HTTP server, locally signed JWTs, real upload bytes and persisted
+backend records. They cover profile → recommendations → KYC → checkout → invoice,
+reload, support, cross-customer isolation, API failure without demo fallback and
+101-ticket pagination. These tests do not claim live Cognito/AWS/provider coverage.
+The backend's Java 21 clean verify also passed all 180 tests after adding the
+test-only HTTP harness. Test signing configuration is excluded from production.

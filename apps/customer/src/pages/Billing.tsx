@@ -16,7 +16,7 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { downloadInvoice, downloadStatement } from '../lib/downloads';
 export default function Billing() {
-  const { data, setData } = useWorkspace(),
+  const { data, setData, cloud } = useWorkspace(),
     notify = useNotify();
   const [filter, setFilter] = useState('all'),
     [pay, setPay] = useState<Invoice | null>(null),
@@ -37,7 +37,7 @@ export default function Billing() {
       setBusy(false);
     }
   }
-  const categoryTotals = latest.lines.reduce<Record<string, number>>((a, l) => {
+  const categoryTotals = (latest?.lines || []).reduce<Record<string, number>>((a, l) => {
     const p = productById(l.productId)!;
     const category = l.category || p.category;
     a[category] = (a[category] || 0) + (l.unitPrice ?? p.price) * l.quantity;
@@ -48,7 +48,7 @@ export default function Billing() {
   const gradient = Object.entries(categoryTotals)
     .map(([_, value], i) => {
       const start = offset;
-      offset += (value / latest.subtotal) * 100;
+      offset += (value / (latest?.subtotal || 1)) * 100;
       return colors[i % colors.length] + ' ' + start + '% ' + offset + '%';
     })
     .join(',');
@@ -106,7 +106,7 @@ export default function Billing() {
               : 'All caught up. That’s one less thing on your list.'}
           </span>
           <div className="button-row">
-            {due > 0 && (
+            {!cloud && due > 0 && (
               <button
                 className="button white"
                 onClick={() => setPay(data.invoices.find((i) => i.status === 'unpaid')!)}
@@ -123,7 +123,7 @@ export default function Billing() {
         <section className="panel spend-panel">
           <div>
             <h2>Where it all goes</h2>
-            <p>{latest.period} · Before demo tax</p>
+            <p>{latest ? latest.period + ' · Before demo tax' : 'No invoices yet'}</p>
             <div className="spend-legend">
               {Object.entries(categoryTotals).map(([name, value], i) => (
                 <span key={name}>
@@ -137,7 +137,7 @@ export default function Billing() {
           <div className="donut" style={{ background: 'conic-gradient(' + gradient + ')' }}>
             <div>
               <small>MONTHLY</small>
-              <strong>{money(latest.subtotal, false)}</strong>
+              <strong>{money(latest?.subtotal || 0, false)}</strong>
             </div>
           </div>
         </section>
@@ -205,7 +205,7 @@ export default function Billing() {
                       >
                         <ArrowDownToLine size={19} />
                       </button>
-                      {i.status === 'unpaid' && (
+                      {!cloud && i.status === 'unpaid' && (
                         <button className="text-button" onClick={() => setPay(i)}>
                           Demo pay <ArrowRight size={14} />
                         </button>

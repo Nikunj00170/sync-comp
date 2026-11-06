@@ -15,7 +15,7 @@ import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 export default function Services() {
-  const { data, setData } = useWorkspace(),
+  const { data, setData, cloud } = useWorkspace(),
     notify = useNotify();
   const [manage, setManage] = useState<{ order: Order; productId: string } | null>(null),
     [quantity, setQuantity] = useState(1);
@@ -95,6 +95,8 @@ export default function Services() {
               <div className="managed-service-actions">
                 <button
                   className="button secondary"
+                  disabled={cloud}
+                  title={cloud ? 'Contact support to change a service.' : undefined}
                   onClick={() => {
                     setManage({ order, productId: p.id });
                     setQuantity(line.quantity);

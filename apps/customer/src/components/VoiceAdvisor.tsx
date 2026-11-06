@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { addToCart, quote } from '@sync/domain';
+import { useWorkspace } from '../lib/store';
+import { useAction } from '../lib/actions';
+import { customerApi } from '../lib/api';
+import { accessToken } from '../lib/auth';
 import { VoiceOrb } from './VoiceOrb';
 import { createVoiceActivity } from '../lib/voiceActivity';
 
@@ -25,7 +31,29 @@ type Turn = {
   sessionId?: string;
   bundle?: Bundle | null;
 };
-export function VoiceAdvisor() {
+export function VoiceAdvisor({ onApplied }: { onApplied?: () => void } = {}) {
+  const { data, setData, cloud } = useWorkspace();
+  const navigate = useNavigate();
+  const { run, busy } = useAction();
+  const voiceBase = (import.meta.env.VITE_VOICE_API_BASE_URL || '').replace(/\/$/, '');
+  async function reviewBundle(bundle: Bundle) {
+    let lines = data.cart;
+    for (const item of bundle.items) {
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000)
+        throw new Error('The advisor suggested an invalid quantity. Choose a plan manually.');
+      lines = addToCart(lines, item.product_id, data.profile).map((line) =>
+        line.productId === item.product_id ? { ...line, quantity: item.quantity } : line,
+      );
+    }
+    const checked = cloud
+      ? await customerApi.quote(await accessToken(), lines)
+      : quote(lines, data.profile);
+    if (checked.errors.length) throw new Error(checked.errors.join('. '));
+    end();
+    setData((previous) => ({ ...previous, cart: checked.lines }));
+    navigate('/checkout');
+    onApplied?.();
+  }
   const surface = useRef<HTMLDivElement | null>(null);
   const speechHeard = useRef(false);
   const [autoSendAvailable, setAutoSendAvailable] = useState(true);
@@ -52,7 +80,7 @@ export function VoiceAdvisor() {
   }
   function clearSession() {
     if (sessionId.current) {
-      void fetch('/api/voice/session', {
+      void fetch(voiceBase + '/api/voice/session', {
         method: 'DELETE',
         headers: { 'X-Voice-Session': sessionId.current },
         keepalive: true,
@@ -162,7 +190,7 @@ export function VoiceAdvisor() {
         controller.current = new AbortController();
         const timeout = setTimeout(() => controller.current?.abort(), 240_000);
         try {
-          const response = await fetch('/api/voice/turn', {
+          const response = await fetch(voiceBase + '/api/voice/turn', {
             method: 'POST',
             headers: {
               'Content-Type': mimeType,
@@ -367,6 +395,16 @@ export function VoiceAdvisor() {
                   {turn.bundle.setup}
                 </p>
                 <small>{turn.bundle.note}</small>
+                <p className="muted small">
+                  Review current catalogue prices and eligibility before checkout.
+                </p>
+                <button
+                  className="button primary"
+                  disabled={busy}
+                  onClick={() => void run(() => reviewBundle(turn.bundle!))}
+                >
+                  Review this bundle
+                </button>
               </div>
             )}
             {!!turn.audios.length && (
