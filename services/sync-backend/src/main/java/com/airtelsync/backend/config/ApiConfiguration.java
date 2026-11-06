@@ -29,7 +29,7 @@ public class ApiConfiguration {
     }
     @Bean
     CorsConfigurationSource corsConfigurationSource(
-        @Value("${SYNC_CORS_ALLOWED_ORIGINS:${FRONTEND_ORIGIN:http://localhost:5173,capacitor://localhost,http://localhost}}") String origins) {
+        @Value("${SYNC_CORS_ALLOWED_ORIGINS:${FRONTEND_ORIGIN:http://localhost:5173,http://127.0.0.1:5173,capacitor://localhost,http://localhost}}") String origins) {
         var allowed = Arrays.stream(origins.split(",")).map(String::strip).filter(s -> !s.isEmpty()).toList();
         if (allowed.contains("*")) throw new IllegalArgumentException("Configure exact CORS origins");
         var config = new CorsConfiguration();

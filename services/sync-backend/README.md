@@ -43,7 +43,7 @@ not loaded automatically by Spring.
 | SYNC_DEMO_ENABLED | `false`; explicit opt-in for simulated checkout/KYC |
 | SYNC_PUBLIC_BASE_URL | `http://localhost:8080`; local upload URL origin |
 | FRONTEND_ORIGIN | Existing CloudFront origin; used for cloud CORS |
-| SYNC_CORS_ALLOWED_ORIGINS | Override FRONTEND_ORIGIN; local default `http://localhost:5173,capacitor://localhost,http://localhost` |
+| SYNC_CORS_ALLOWED_ORIGINS | Override FRONTEND_ORIGIN; local default `http://localhost:5173,http://127.0.0.1:5173,capacitor://localhost,http://localhost` |
 | AWS_REGION | SDK region when AWS adapters are enabled |
 | CUSTOMERS_TABLE, ORDERS_TABLE, ACTIVITY_TABLE | Existing customer, order/invoice, and activity tables |
 | SYNC_DYNAMODB_TABLE | Optional single-table fallback |

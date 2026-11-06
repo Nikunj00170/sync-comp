@@ -5347,3 +5347,33 @@ html[data-reduce-motion='true'] .voice-sphere-core {
 .connection-gate h1 {
   font-size: clamp(1.5rem, 3vw, 2rem);
 }
+
+@font-face {
+  font-family: 'Noto Sans Devanagari';
+  src: url('./assets/fonts/NotoSansDevanagari.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+html:lang(hi) body, html:lang(mr) body {
+  font-family: 'Noto Sans Devanagari', 'DM Sans', system-ui, sans-serif;
+  line-height: 1.65;
+}
+html:lang(hi) .eyebrow, html:lang(mr) .eyebrow,
+html:lang(hi) .nav-caption, html:lang(mr) .nav-caption { letter-spacing: 0; }
+.language-control select {
+  max-width: 105px;
+  min-height: 38px;
+  border: 1px solid var(--border, #e2e4e8);
+  border-radius: 10px;
+  padding: 5px 8px;
+  background: #fff;
+  color: #30343b;
+  font: inherit;
+  font-size: 13px;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 600px) { .topbar-right { gap: 8px; } .language-control select { max-width: 90px; } }
+
+/* Focused controls stay clear of the sticky header and phone navigation. */
+html { scroll-padding-block: 90px; }
+button, input, select, textarea, a { scroll-margin-block: 90px; }

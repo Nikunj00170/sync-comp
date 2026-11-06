@@ -35,13 +35,23 @@ export async function download(blob: Blob, name: string) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
-export async function invoicePdf(invoice: Invoice, profile: Profile) {
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+export async function invoicePdf(invoice: Invoice, profile: Profile, suppliedFont?: Uint8Array) {
+  await import('regenerator-runtime/runtime.js');
+  const { PDFDocument, rgb } = await import('pdf-lib');
+  const fontkit = (await import('@pdf-lib/fontkit')).default;
+  const fontUrl = new URL('../assets/fonts/NotoSansDevanagari.ttf', import.meta.url).href;
+  const fontBytes = suppliedFont || await (async () => {
+    const response = await fetch(fontUrl);
+    if (!response.ok) throw new Error('The invoice font could not be loaded. Please try again.');
+    return response.arrayBuffer();
+  })();
   const pdf = await PDFDocument.create();
   let page = pdf.addPage([595, 842]);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const clean = (s: string) => s.normalize('NFKD').replace(/[^\x20-\x7E]/g, '');
+  pdf.registerFontkit(fontkit);
+  const font = await pdf.embedFont(fontBytes, { subset: true });
+  const bold = font;
+  // Preserve Hindi/Marathi names and addresses. Strip only control characters.
+  const clean = (s: string) => s.normalize('NFC').replace(/[\u0000-\u001f\u007f]/g, ' ');
   const text = (
     s: string,
     x: number,
@@ -64,6 +74,7 @@ export async function invoicePdf(invoice: Invoice, profile: Profile) {
     return lines;
   };
   const header = () => {
+    page.drawRectangle({ x: 0, y: 0, width: 595, height: 842, color: rgb(1, 1, 1) });
     page.drawRectangle({ x: 0, y: 740, width: 595, height: 102, color: rgb(0.89, 0, 0) });
     text('Accel Telecom', 40, 791, 28, true, rgb(1, 1, 1));
     text('CONSOLIDATED DEMO INVOICE', 40, 765, 10, false, rgb(1, 1, 1));

@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -10,11 +11,12 @@ import {
   ShoppingBag,
   Trash2,
 } from 'lucide-react';
-import { makeOrder, money, productById, quote, removeFromCart } from '@sync/domain';
+import { makeOrder, productById, quote, removeFromCart } from '@sync/domain';
 import { useQuote } from '../lib/useQuote';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 export default function Checkout() {
+  const { t, locale } = useI18n();
   const { data, setData, cloud, placeOrder } = useWorkspace(),
     notify = useNotify(),
     navigate = useNavigate();
@@ -27,7 +29,7 @@ export default function Checkout() {
       if (!accepted) throw new Error('Please confirm this is a demo order.');
       setBusy(true);
       const order = await placeOrder();
-      notify('Your demo order is saved. Let’s get you connected.');
+      notify(t("Your demo order is saved. Let’s get you connected."));
       navigate('/orders/' + order.id);
     } catch (e) {
       notify((e as Error).message);
@@ -37,12 +39,10 @@ export default function Checkout() {
   if (!q)
     return (
       <section className="panel" role={quoteError ? 'alert' : 'status'}>
-        <h1>Your bundle quotation</h1>
-        <p>{quoteError || 'Calculating your quotation with the customer API…'}</p>
+        <h1>{t("Your bundle quotation")}</h1>
+        <p>{t(quoteError) || t("Calculating your quotation with the customer API…")}</p>
         {quoteError && (
-          <button className="button secondary" onClick={retry}>
-            Try again
-          </button>
+          <button className="button secondary" onClick={retry}>{t("Try again")}</button>
         )}
       </section>
     );
@@ -50,11 +50,10 @@ export default function Checkout() {
     return (
       <div className="empty-state">
         <ShoppingBag size={48} />
-        <span className="eyebrow">A LITTLE POSSIBILITY GOES A LONG WAY.</span>
-        <h1>Your bundle is a blank canvas.</h1>
-        <p>Let’s find the connections and tools that fit your business.</p>
-        <Link to="/plans" className="button primary">
-          Explore plans <ArrowRight size={17} />
+        <span className="eyebrow">{t("A LITTLE POSSIBILITY GOES A LONG WAY.")}</span>
+        <h1>{t("Your bundle is a blank canvas.")}</h1>
+        <p>{t("Let’s find the connections and tools that fit your business.")}</p>
+        <Link to="/plans" className="button primary">{t("Explore plans ")}<ArrowRight size={17} />
         </Link>
       </div>
     );
@@ -62,22 +61,19 @@ export default function Checkout() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">GOOD CHOICES. ALL TOGETHER.</span>
-          <h1>
-            Make it your bundle<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("GOOD CHOICES. ALL TOGETHER.")}</span>
+          <h1>{t("Make it your bundle")}<span className="heading-dot">.</span>
           </h1>
-          <p>One last look before your business takes its next step.</p>
+          <p>{t("One last look before your business takes its next step.")}</p>
         </div>
         <Link to="/plans" className="text-button">
-          <ArrowLeft size={16} /> Keep exploring
-        </Link>
+          <ArrowLeft size={16} />{t(" Keep exploring")}</Link>
       </div>
       <div className="checkout-layout">
         <div>
           <section className="panel">
             <div className="section-heading">
-              <h2>
-                Your selected services <span className="count-badge">{data.cart.length}</span>
+              <h2>{t("Your selected services ")}<span className="count-badge">{data.cart.length}</span>
               </h2>
             </div>
             <div className="cart-lines">
@@ -89,15 +85,15 @@ export default function Checkout() {
                       <ShoppingBag size={21} />
                     </span>
                     <div className="cart-line-copy">
-                      <span className="eyebrow">{p.category}</span>
+                      <span className="eyebrow">{t(p.category)}</span>
                       <h3>{p.name}</h3>
                       <p>
-                        {money(p.price)} / month {p.unit}
+                        {money(p.price)}{t(" / month ")}{p.unit}
                       </p>
                     </div>
                     <div className="quantity-control">
                       <button
-                        aria-label={'Decrease ' + p.name + ' quantity'}
+                        aria-label={t("Decrease ") + p.name + t(" quantity")}
                         disabled={line.quantity <= 1}
                         onClick={() =>
                           setData((d) => ({
@@ -110,9 +106,9 @@ export default function Checkout() {
                       >
                         <Minus size={14} />
                       </button>
-                      <span aria-label={p.name + ' quantity'}>{line.quantity}</span>
+                      <span aria-label={p.name + t(" quantity")}>{line.quantity}</span>
                       <button
-                        aria-label={'Increase ' + p.name + ' quantity'}
+                        aria-label={t("Increase ") + p.name + t(" quantity")}
                         disabled={line.quantity >= 1000}
                         onClick={() =>
                           setData((d) => ({
@@ -129,7 +125,7 @@ export default function Checkout() {
                     <strong>{money(p.price * line.quantity)}</strong>
                     <button
                       className="icon-button"
-                      aria-label={'Remove ' + p.name}
+                      aria-label={t("Remove ") + p.name}
                       onClick={() => {
                         setData((d) => ({ ...d, cart: removeFromCart(d.cart, p.id) }));
                         notify('Service removed. Any dependent add-ons were removed too.');
@@ -149,69 +145,56 @@ export default function Checkout() {
             <div>
               <h2>
                 {data.kyc.status === 'demo_verified'
-                  ? 'You’re verified for the demo.'
-                  : 'A quick check before your next step.'}
+                  ? t("You’re verified for the demo.")
+                  : t("A quick check before your next step.")}
               </h2>
               <p>
                 {data.kyc.status === 'demo_verified'
-                  ? 'Your mock verification is complete. No live identity check has taken place.'
-                  : 'Complete your business verification to try placing a demo order.'}
+                  ? t("Your mock verification is complete. No live identity check has taken place.")
+                  : t("Complete your business verification to try placing a demo order.")}
               </p>
               {data.kyc.status !== 'demo_verified' && (
-                <Link className="text-button" to="/verification">
-                  Complete verification <ArrowRight size={16} />
+                <Link className="text-button" to="/verification">{t("Complete verification ")}<ArrowRight size={16} />
                 </Link>
               )}
             </div>
           </section>
           <section className="panel">
-            <h2>Your business details</h2>
+            <h2>{t("Your business details")}</h2>
             <div className="detail-grid">
-              <span>
-                Business<strong>{data.profile.business}</strong>
+              <span>{t("Business")}<strong>{data.profile.business}</strong>
               </span>
-              <span>
-                Contact<strong>{data.profile.name}</strong>
+              <span>{t("Contact")}<strong>{data.profile.name}</strong>
               </span>
             </div>
-            <label className="form-field">
-              Installation address
-              <textarea
+            <label className="form-field">{t("Installation address")}<textarea
                 readOnly={cloud}
                 value={data.profile.address}
                 onChange={(e) =>
                   setData((d) => ({ ...d, profile: { ...d.profile, address: e.target.value } }))
                 }
-                placeholder="Add your complete business address"
+                placeholder={t("Add your complete business address")}
               />
             </label>
             {cloud && (
-              <Link className="text-button" to="/account">
-                Update your address in Account & settings
-              </Link>
+              <Link className="text-button" to="/account">{t("Update your address in Account & settings")}</Link>
             )}
           </section>
         </div>
         <aside className="panel checkout-summary">
-          <span className="eyebrow">YOUR NEXT CHAPTER, SUMMED UP.</span>
-          <h2>Your bundle summary</h2>
+          <span className="eyebrow">{t("YOUR NEXT CHAPTER, SUMMED UP.")}</span>
+          <h2>{t("Your bundle summary")}</h2>
           <div className="summary-lines">
-            <span>
-              Monthly service charges<strong>{money(q.monthly)}</strong>
+            <span>{t("Monthly service charges")}<strong>{money(q.monthly)}</strong>
             </span>
-            <span>
-              Illustrative demo tax (18%)<strong>{money(q.tax)}</strong>
+            <span>{t("Illustrative demo tax (18%)")}<strong>{money(q.tax)}</strong>
             </span>
-            <span className="summary-total">
-              Monthly total<strong>{money(q.total)}</strong>
+            <span className="summary-total">{t("Monthly total")}<strong>{money(q.total)}</strong>
             </span>
-            <span>
-              One-time setup, before demo tax<strong>{money(q.setup)}</strong>
+            <span>{t("One-time setup, before demo tax")}<strong>{money(q.setup)}</strong>
             </span>
           </div>
-          <p className="muted small">
-            Demo prices from a fictional case catalogue. This is not a live tariff or tax quotation.
-          </p>
+          <p className="muted small">{t("Demo prices from a fictional case catalogue. This is not a live tariff or tax quotation.")}</p>
           {q.errors.map((x) => (
             <p key={x} className="field-error">
               {x}
@@ -223,10 +206,7 @@ export default function Checkout() {
               checked={accepted}
               onChange={(e) => setAccepted(e.target.checked)}
             />
-            <span>
-              I understand this is a demo order. No payment is collected and no real service is
-              purchased.
-            </span>
+            <span>{t("I understand this is a demo order. No payment is collected and no real service is purchased.")}</span>
           </label>
           <button
             className="button primary full"
@@ -239,11 +219,10 @@ export default function Checkout() {
             }
             onClick={place}
           >
-            {busy ? 'Saving your order…' : 'Place demo order'} <ArrowRight size={17} />
+            {busy ? t("Saving your order…") : t("Place demo order")} <ArrowRight size={17} />
           </button>
           <span className="secure-note">
-            <ShieldCheck size={15} /> Your next step, with everything clear.
-          </span>
+            <ShieldCheck size={15} />{t(" Your next step, with everything clear.")}</span>
         </aside>
       </div>
     </>

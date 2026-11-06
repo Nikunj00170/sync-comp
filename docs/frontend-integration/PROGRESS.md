@@ -48,3 +48,19 @@ reload, support, cross-customer isolation, API failure without demo fallback and
 101-ticket pagination. These tests do not claim live Cognito/AWS/provider coverage.
 The backend's Java 21 clean verify also passed all 180 tests after adding the
 test-only HTTP harness. Test signing configuration is excluded from production.
+
+## Phase 3 checkpoint: localization and delivery checks
+
+Implemented English, Hindi and Marathi UI dictionaries, persistent language
+selection, localized navigation/forms/status/date/currency, canonical API values,
+Devanagari web/PDF fonts and Unicode-preserving invoice exports. Added browser,
+dictionary-coverage and PDF tests, explicit voice enablement, isolated test ports
+and a frontend/full-stack CI workflow. Updated customer setup documentation.
+
+Verified before this checkpoint: production build and 23 unit tests pass; both
+Hindi/Marathi mobile language flows pass using touch input; eight local full-stack
+tests passed before the last canonical-selection/CORS adjustments. The Android
+SDK was found and an Android debug APK build succeeded after setting ANDROID_HOME.
+Final combined browser/full-stack reruns and the new default-development-CORS test
+were pending when the project case/data audit was requested. This checkpoint does
+not claim live AWS, Cognito, provider or device-runtime verification.

@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { Link } from 'react-router-dom';
 import {
   ArrowDownLeft,
@@ -18,12 +19,13 @@ import {
   Wifi,
   Zap,
 } from 'lucide-react';
-import { money, orderSteps, productById, statusLabels } from '@sync/domain';
+import { orderSteps, productById, statusLabels } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { NetworkArt } from '../components/NetworkArt';
 import { downloadInvoice } from '../lib/downloads';
 export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
+  const { t, locale } = useI18n();
   const { data } = useWorkspace();
   const notify = useNotify();
   const active = data.orders.filter((x) => x.status === 'active');
@@ -35,15 +37,14 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">YOUR BUSINESS, CONNECTED.</div>
-          <h1>
-            Good to see you, {data.profile.name.split(' ')[0] || 'there'}
+          <div className="eyebrow">{t("YOUR BUSINESS, CONNECTED.")}</div>
+          <h1>{t("Good to see you, ")}{data.profile.name.split(' ')[0] || t("there")}
             <span className="heading-dot">.</span>
           </h1>
-          <p>A little less managing. A lot more moving forward.</p>
+          <p>{t("A little less managing. A lot more moving forward.")}</p>
         </div>
         <span className="date-chip">
-          {new Date().toLocaleDateString('en-IN', {
+          {new Date().toLocaleDateString(locale, {
             weekday: 'short',
             day: 'numeric',
             month: 'long',
@@ -54,49 +55,38 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
       <section className="welcome-hero">
         <div className="hero-copy">
           <span className="hero-tag">
-            <span /> ONE WORKSPACE. EVERY POSSIBILITY.
-          </span>
-          <h2>
-            Big ambitions.
-            <br />
-            <span>Beautifully connected.</span>
+            <span />{t(" ONE WORKSPACE. EVERY POSSIBILITY.")}</span>
+          <h2>{t("Big ambitions.")}<br />
+            <span>{t("Beautifully connected.")}</span>
           </h2>
-          <p>
-            Your connections, your team, your next chapter.
-            <br className="desktop-break" /> Bring it all together with a plan that fits.
-          </p>
+          <p>{t("Your connections, your team, your next chapter.")}<br className="desktop-break" />{t(" Bring it all together with a plan that fits.")}</p>
           <div className="hero-actions">
-            <Link className="button primary" to="/discover">
-              Find my perfect fit <ArrowRight size={17} />
+            <Link className="button primary" to="/discover">{t("Find my perfect fit ")}<ArrowRight size={17} />
             </Link>
-            <Link className="button ghost" to="/plans">
-              Explore plans <ArrowUpRight size={17} />
+            <Link className="button ghost" to="/plans">{t("Explore plans ")}<ArrowUpRight size={17} />
             </Link>
           </div>
           <div className="hero-proof">
             <span>
-              <Check size={14} /> Built around your business
-            </span>
+              <Check size={14} />{t(" Built around your business")}</span>
             <span>
-              <Check size={14} /> One view of everything
-            </span>
+              <Check size={14} />{t(" One view of everything")}</span>
           </div>
         </div>
         <NetworkArt />
       </section>
-      <section className="stats-grid" aria-label="Workspace at a glance">
+      <section className="stats-grid" aria-label={t("Workspace at a glance")}>
         <div className="stat-card">
           <span className="stat-icon red">
             <Layers3 size={20} />
           </span>
           <div>
-            <span>Active services</span>
+            <span>{t("Active services")}</span>
             <strong>{lines.length.toString().padStart(2, '0')}</strong>
             <small className="positive">
-              <span className="status-dot" /> Across your workspace
-            </small>
+              <span className="status-dot" />{t(" Across your workspace")}</small>
           </div>
-          <Link to="/services" aria-label="View active services">
+          <Link to="/services" aria-label={t("View active services")}>
             <ArrowUpRight size={18} />
           </Link>
         </div>
@@ -105,11 +95,11 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
             <Package size={20} />
           </span>
           <div>
-            <span>Orders in progress</span>
+            <span>{t("Orders in progress")}</span>
             <strong>{pending.length.toString().padStart(2, '0')}</strong>
-            <small>We’ll keep you in the loop</small>
+            <small>{t("We’ll keep you in the loop")}</small>
           </div>
-          <Link to="/orders" aria-label="Track orders">
+          <Link to="/orders" aria-label={t("Track orders")}>
             <ArrowUpRight size={18} />
           </Link>
         </div>
@@ -118,11 +108,11 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
             <FileText size={20} />
           </span>
           <div>
-            <span>Monthly services</span>
+            <span>{t("Monthly services")}</span>
             <strong>{money(monthly, false)}</strong>
-            <small>Before illustrative demo tax</small>
+            <small>{t("Before illustrative demo tax")}</small>
           </div>
-          <Link to="/billing" aria-label="View billing">
+          <Link to="/billing" aria-label={t("View billing")}>
             <ArrowUpRight size={18} />
           </Link>
         </div>
@@ -131,17 +121,17 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
             <ShieldCheck size={20} />
           </span>
           <div>
-            <span>Business verification</span>
+            <span>{t("Business verification")}</span>
             <strong className="stat-word">
-              {data.kyc.status === 'demo_verified' ? 'Complete' : 'One more step'}
+              {data.kyc.status === 'demo_verified' ? t("Complete") : t("One more step")}
             </strong>
             <small className={data.kyc.status === 'demo_verified' ? 'positive' : 'attention'}>
               {data.kyc.status === 'demo_verified'
-                ? 'Demo verification complete'
-                : 'Let’s make it official'}
+                ? t("Demo verification complete")
+                : t("Let’s make it official")}
             </small>
           </div>
-          <Link to="/verification" aria-label="Complete verification">
+          <Link to="/verification" aria-label={t("Complete verification")}>
             <ArrowUpRight size={18} />
           </Link>
         </div>
@@ -151,13 +141,11 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
           <section className="panel services-panel">
             <div className="section-heading">
               <div>
-                <h2>
-                  Your business essentials <span className="count-badge">{lines.length}</span>
+                <h2>{t("Your business essentials ")}<span className="count-badge">{lines.length}</span>
                 </h2>
-                <p>The services keeping your everyday moving.</p>
+                <p>{t("The services keeping your everyday moving.")}</p>
               </div>
-              <Link className="text-button" to="/services">
-                View all <ArrowRight size={16} />
+              <Link className="text-button" to="/services">{t("View all ")}<ArrowRight size={16} />
               </Link>
             </div>
             <div className="service-grid">
@@ -171,19 +159,18 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
                         <Icon size={21} />
                       </span>
                       <span className="badge success">
-                        <span /> Active
-                      </span>
+                        <span />{t(" Active")}</span>
                     </div>
                     <h3>{product.name}</h3>
                     <p>
                       {line.quantity} {product.unit.replace('per ', '')}
-                      {line.quantity > 1 ? 's' : ''} ·{' '}
-                      {i === 0 ? 'Unlimited possibilities' : 'Ready for your everyday'}
+                      {line.quantity > 1 ? t("s") : ''} ·{' '}
+                      {i === 0 ? t("Unlimited possibilities") : t("Ready for your everyday")}
                     </p>
                     <div className="service-price">
                       <strong>
                         {money(product.price * line.quantity, false)}
-                        <small>/mo</small>
+                        <small>{t("/mo")}</small>
                       </strong>
                       <ArrowUpRight size={17} />
                     </div>
@@ -196,14 +183,13 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
             <section className="panel order-peek">
               <div className="section-heading">
                 <div>
-                  <span className="eyebrow">YOUR NEXT CONNECTION</span>
+                  <span className="eyebrow">{t("YOUR NEXT CONNECTION")}</span>
                   <h2>{pending[0].name}</h2>
                   <p>
-                    {pending[0].id} · {statusLabels[pending[0].status]}
+                    {pending[0].id} · {t(statusLabels[pending[0].status])}
                   </p>
                 </div>
-                <Link className="text-button" to={'/orders/' + pending[0].id}>
-                  Track order <ArrowRight size={16} />
+                <Link className="text-button" to={'/orders/' + pending[0].id}>{t("Track order ")}<ArrowRight size={16} />
                 </Link>
               </div>
               <div className="mini-progress">
@@ -225,7 +211,7 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
                           <span />
                         )}
                       </span>
-                      <small>{s.label}</small>
+                      <small>{t(s.label)}</small>
                     </div>
                   );
                 })}
@@ -235,11 +221,11 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
                   <Package size={18} />
                 </span>
                 <p>
-                  <strong>Something good is on its way.</strong>
+                  <strong>{t("Something good is on its way.")}</strong>
                   <br />
                   {pending[0].status === 'scheduled'
-                    ? 'Your sample installation is scheduled. View or change your preferred slot.'
-                    : 'Follow each sample milestone as your order moves forward.'}
+                    ? t("Your sample installation is scheduled. View or change your preferred slot.")
+                    : t("Follow each sample milestone as your order moves forward.")}
                 </p>
                 <ChevronRight size={19} />
               </div>
@@ -247,7 +233,7 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
           )}
           <section className="quick-actions">
             <div className="section-heading">
-              <h2>A shortcut to your next step</h2>
+              <h2>{t("A shortcut to your next step")}</h2>
             </div>
             <div className="quick-grid">
               {[
@@ -272,7 +258,7 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
               ].map((x) => (
                 <Link to={x.to} key={x.to}>
                   <x.icon size={22} />
-                  <strong>{x.label}</strong>
+                  <strong>{t(x.label)}</strong>
                   <span>{x.sub}</span>
                   <ArrowUpRight size={17} />
                 </Link>
@@ -284,35 +270,32 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
           {invoice ? (
             <section className="panel bill-peek">
               <div className="section-heading">
-                <h2>One bill. Zero juggling.</h2>
+                <h2>{t("One bill. Zero juggling.")}</h2>
                 <span className="round-icon">
                   <FileText size={18} />
                 </span>
               </div>
-              <p>Every service, neatly in one place.</p>
+              <p>{t("Every service, neatly in one place.")}</p>
               <div className="bill-amount">
                 <small>{invoice.period.toUpperCase()}</small>
                 <strong>{money(invoice.total)}</strong>
                 <span className={'badge ' + (invoice.status === 'paid' ? 'success' : 'amber')}>
                   {invoice.status === 'paid'
-                    ? 'Paid in demo'
-                    : 'Due ' +
-                      new Date(invoice.dueAt).toLocaleDateString('en-IN', {
+                    ? t("Paid in demo")
+                    : t("Due ") +
+                      new Date(invoice.dueAt).toLocaleDateString(locale, {
                         day: 'numeric',
                         month: 'short',
                       })}
                 </span>
               </div>
               <div className="bill-breakdown">
-                <span>
-                  Service charges <strong>{money(invoice.subtotal)}</strong>
+                <span>{t("Service charges ")}<strong>{money(invoice.subtotal)}</strong>
                 </span>
-                <span>
-                  Illustrative tax <strong>{money(invoice.tax)}</strong>
+                <span>{t("Illustrative tax ")}<strong>{money(invoice.tax)}</strong>
                 </span>
               </div>
-              <Link className="button primary full" to="/billing">
-                View your bill <ArrowRight size={16} />
+              <Link className="button primary full" to="/billing">{t("View your bill ")}<ArrowRight size={16} />
               </Link>
               <button
                 className="text-button full center"
@@ -322,34 +305,25 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
                   )
                 }
               >
-                <Download size={15} /> Download demo invoice
-              </button>
+                <Download size={15} />{t(" Download demo invoice")}</button>
             </section>
           ) : (
             <section className="panel">
-              <h2>No invoices yet</h2>
-              <p>Your account invoices will appear here after an order.</p>
-              <Link to="/plans" className="button secondary">
-                Explore plans
-              </Link>
+              <h2>{t("No invoices yet")}</h2>
+              <p>{t("Your account invoices will appear here after an order.")}</p>
+              <Link to="/plans" className="button secondary">{t("Explore plans")}</Link>
             </section>
           )}
           <section className="insight-card">
             <span className="insight-icon">
               <Zap size={20} />
             </span>
-            <span className="eyebrow">A LITTLE INSIGHT</span>
-            <h3>
-              Your team is growing.
-              <br />
-              Your plan can too.
-            </h3>
-            <p>
-              Explore the right mix of connectivity, productivity and protection for{' '}
+            <span className="eyebrow">{t("A LITTLE INSIGHT")}</span>
+            <h3>{t("Your team is growing.")}<br />{t("Your plan can too.")}</h3>
+            <p>{t("Explore the right mix of connectivity, productivity and protection for")}{' '}
               {data.profile.business}.
             </p>
-            <Link to="/discover">
-              Explore my possibilities <ArrowRight size={16} />
+            <Link to="/discover">{t("Explore my possibilities ")}<ArrowRight size={16} />
             </Link>
             <div className="insight-rings" aria-hidden="true">
               <span />
@@ -362,9 +336,9 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
               <Mic size={23} />
             </span>
             <div>
-              <span className="coming-tag">VOICE PREVIEW</span>
-              <h3>Say hello to a smarter start.</h3>
-              <p>Your business. Your words. Your voice advisor.</p>
+              <span className="coming-tag">{t("VOICE PREVIEW")}</span>
+              <h3>{t("Say hello to a smarter start.")}</h3>
+              <p>{t("Your business. Your words. Your voice advisor.")}</p>
             </div>
             <ArrowUpRight size={18} />
           </button>

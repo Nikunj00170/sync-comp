@@ -8,15 +8,16 @@ import '@fontsource/dm-sans/latin-700.css';
 import { WorkspaceProvider } from './lib/store';
 import { FeedbackProvider } from './lib/feedback';
 import App from './App';
+import { LanguageProvider } from './lib/i18n';
 import './styles.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HashRouter>
+    <LanguageProvider><HashRouter>
       <WorkspaceProvider>
         <FeedbackProvider>
           <App />
         </FeedbackProvider>
       </WorkspaceProvider>
-    </HashRouter>
+    </HashRouter></LanguageProvider>
   </React.StrictMode>,
 );

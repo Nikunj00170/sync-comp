@@ -1,4 +1,6 @@
+import { useI18n } from '../lib/i18n';
 export function NetworkArt() {
+  const { t, locale } = useI18n();
   return (
     <div className="network-art" aria-hidden="true">
       <svg viewBox="0 0 430 270" fill="none">
@@ -83,8 +85,7 @@ export function NetworkArt() {
         <circle cx="306" cy="229" r="3" fill="#ee8b92" />
       </svg>
       <div className="art-pill">
-        <span /> Everything, working together.
-      </div>
+        <span />{t(" Everything, working together.")}</div>
     </div>
   );
 }

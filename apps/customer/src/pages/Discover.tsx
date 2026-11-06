@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -13,7 +14,7 @@ import {
   Wifi,
   Zap,
 } from 'lucide-react';
-import { money, productById, profileSchema, recommendations, type Profile } from '@sync/domain';
+import { productById, profileSchema, recommendations, type Profile } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useAction } from '../lib/actions';
 import type { Recommendation } from '../lib/api';
@@ -45,6 +46,7 @@ const priorities = [
   },
 ];
 export default function Discover() {
+  const { t, locale } = useI18n();
   const { data, setData, cloud, saveProfile, matches } = useWorkspace(),
     notify = useNotify(),
     navigate = useNavigate();
@@ -90,7 +92,7 @@ export default function Discover() {
       const e: Record<string, string> = {};
       for (const i of parsed.error.issues) e[String(i.path[0])] = i.message;
       setErrors(e);
-      notify('A few details need your attention.');
+      notify(t("A few details need your attention."));
       return;
     }
     setErrors({});
@@ -107,13 +109,13 @@ export default function Discover() {
   }
   const input = (key: 'name' | 'business' | 'email' | 'city', label: string) => (
     <label className="form-field">
-      {label}
+      {t(label)}
       <input
         value={profile[key]}
         onChange={(e) => update(key, e.target.value)}
         aria-invalid={Boolean(errors[key])}
       />
-      {errors[key] && <span className="field-error">{errors[key]}</span>}
+      {errors[key] && <span className="field-error">{t(errors[key])}</span>}
     </label>
   );
   if (result) {
@@ -122,12 +124,10 @@ export default function Discover() {
       <>
         <div className="page-heading">
           <div>
-            <span className="eyebrow">BUILT AROUND YOU</span>
-            <h1>
-              Your business. Your best fit<span className="heading-dot">.</span>
+            <span className="eyebrow">{t("BUILT AROUND YOU")}</span>
+            <h1>{t("Your business. Your best fit")}<span className="heading-dot">.</span>
             </h1>
-            <p>
-              A thoughtful match for {data.profile.employees} people at {data.profile.business}.
+            <p>{t("A thoughtful match for ")}{data.profile.employees}{t(" people at ")}{data.profile.business}.
             </p>
           </div>
           <button
@@ -137,31 +137,27 @@ export default function Discover() {
               setStep(0);
             }}
           >
-            <ArrowLeft size={16} /> Refine my answers
-          </button>
+            <ArrowLeft size={16} />{t(" Refine my answers")}</button>
         </div>
         <div className="notice positive">
           <Sparkles size={19} />
-          <span>
-            Matched using your business profile, plan eligibility and required service connections.
-          </span>
+          <span>{t("Matched using your business profile, plan eligibility and required service connections.")}</span>
         </div>
         <div className="recommendation-grid">
           {bundles.map((b, i) => (
             <article key={b.id} className={'recommendation-card ' + (i === 1 ? 'featured' : '')}>
               {i === 1 && (
                 <span className="recommendation-ribbon">
-                  <Sparkles size={14} /> OUR PICK FOR YOU
-                </span>
+                  <Sparkles size={14} />{t(" OUR PICK FOR YOU")}</span>
               )}
-              <span className="eyebrow">{b.eyebrow}</span>
-              <h2>{b.name}</h2>
-              <p>{b.description}</p>
+              <span className="eyebrow">{t(b.eyebrow)}</span>
+              <h2>{t(b.name)}</h2>
+              <p>{t(b.description)}</p>
               <div className="recommendation-price">
                 {money(b.quote.monthly, false)}
-                <span>/month</span>
+                <span>{t("/month")}</span>
               </div>
-              <small className="muted">Before illustrative demo tax</small>
+              <small className="muted">{t("Before illustrative demo tax")}</small>
               <ul className="recommendation-lines">
                 {b.lines.map((l) => (
                   <li key={l.productId}>
@@ -170,7 +166,7 @@ export default function Discover() {
                       {productById(l.productId)?.name}
                       <small>
                         {l.quantity} {productById(l.productId)?.unit.replace('per ', '')}
-                        {l.quantity > 1 ? 's' : ''}
+                        {l.quantity > 1 ? t("s") : ''}
                       </small>
                     </span>
                   </li>
@@ -179,12 +175,9 @@ export default function Discover() {
               <div className="fit-reason">
                 {b.quote.monthly <= profile.budget * 100 ? (
                   <>
-                    <Check size={15} /> Within your monthly budget
-                  </>
+                    <Check size={15} />{t(" Within your monthly budget")}</>
                 ) : (
-                  <>
-                    Above your budget by {money(b.quote.monthly - profile.budget * 100, false)}/mo
-                  </>
+                  <>{t("Above your budget by ")}{money(b.quote.monthly - profile.budget * 100, false)}{t("/mo")}</>
                 )}
               </div>
               <button
@@ -194,16 +187,12 @@ export default function Discover() {
                   notify('Your recommended bundle is ready to review.');
                   navigate('/checkout');
                 }}
-              >
-                Make this my bundle <ArrowRight size={16} />
+              >{t("Make this my bundle ")}<ArrowRight size={16} />
               </button>
             </article>
           ))}
         </div>
-        <p className="footnote">
-          These are demo recommendations from fictional case products, not a live serviceability or
-          availability check.
-        </p>
+        <p className="footnote">{t("These are demo recommendations from fictional case products, not a live serviceability or availability check.")}</p>
       </>
     );
   }
@@ -211,11 +200,10 @@ export default function Discover() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">A BETTER FIT STARTS HERE.</span>
-          <h1>
-            Tell us a little. Get a lot more<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("A BETTER FIT STARTS HERE.")}</span>
+          <h1>{t("Tell us a little. Get a lot more")}<span className="heading-dot">.</span>
           </h1>
-          <p>Three quick steps to a bundle that makes sense for your business.</p>
+          <p>{t("Three quick steps to a bundle that makes sense for your business.")}</p>
         </div>
         <button
           className="text-button"
@@ -223,9 +211,7 @@ export default function Discover() {
             notify('Your answers are saved on this device.');
             navigate('/');
           }}
-        >
-          Save & finish later
-        </button>
+        >{t("Save & finish later")}</button>
       </div>
       <div className="discovery-layout">
         <div className="discovery-form panel">
@@ -237,22 +223,22 @@ export default function Discover() {
               </div>
             ))}
           </div>
-          <span className="eyebrow">STEP {step + 1} OF 3</span>
+          <span className="eyebrow">{t("STEP ")}{step + 1}{t(" OF 3")}</span>
           <h2>
             {
               [
-                'Let’s start with your business.',
-                'Small team. Big possibilities.',
-                'What matters most to you?',
+                t('Let’s start with your business.'),
+                t('Small team. Big possibilities.'),
+                t('What matters most to you?'),
               ][step]
             }
           </h2>
           <p className="muted">
             {
               [
-                'A few details help us understand your everyday.',
-                'We’ll scale your recommendations to the people and places you connect.',
-                'Choose the things that will make your workday better.',
+                t('A few details help us understand your everyday.'),
+                t('We’ll scale your recommendations to the people and places you connect.'),
+                t('Choose the things that will make your workday better.'),
               ][step]
             }
           </p>
@@ -262,26 +248,22 @@ export default function Discover() {
               {input('name', 'Your name')}
               {input('email', 'Email address')}
               {input('city', 'City')}
-              <label className="form-field">
-                Industry
-                <select
+              <label className="form-field">{t("Industry")}<select
                   value={profile.industry}
                   onChange={(e) => update('industry', e.target.value)}
                 >
-                  <option value="professional">Professional services</option>
-                  <option value="retail">Retail & small business</option>
-                  <option value="manufacturing">Manufacturing</option>
-                  <option value="hospitality">Hospitality</option>
+                  <option value="professional">{t("Professional services")}</option>
+                  <option value="retail">{t("Retail & small business")}</option>
+                  <option value="manufacturing">{t("Manufacturing")}</option>
+                  <option value="hospitality">{t("Hospitality")}</option>
                 </select>
               </label>
-              <label className="form-field">
-                City tier
-                <select
+              <label className="form-field">{t("City tier")}<select
                   value={profile.tier}
                   onChange={(e) => update('tier', Number(e.target.value))}
                 >
-                  <option value={1}>Tier 1</option>
-                  <option value={2}>Tier 2</option>
+                  <option value={1}>{t("Tier 1")}</option>
+                  <option value={2}>{t("Tier 2")}</option>
                 </select>
               </label>
               <label className="check-label span-two">
@@ -289,38 +271,30 @@ export default function Discover() {
                   type="checkbox"
                   checked={profile.hasGstin}
                   onChange={(e) => update('hasGstin', e.target.checked)}
-                />{' '}
-                My business has GST registration
-              </label>
+                />{' '}{t("My business has GST registration")}</label>
             </div>
           )}
           {step === 1 && (
             <div className="form-grid">
-              <label className="form-field">
-                People in your team
-                <input
+              <label className="form-field">{t("People in your team")}<input
                   type="number"
                   min={1}
                   max={1000}
                   value={profile.employees}
                   onChange={(e) => update('employees', Number(e.target.value))}
                 />
-                {errors.employees && <span className="field-error">{errors.employees}</span>}
+                {errors.employees && <span className="field-error">{t(errors.employees)}</span>}
               </label>
-              <label className="form-field">
-                Business locations
-                <input
+              <label className="form-field">{t("Business locations")}<input
                   type="number"
                   min={1}
                   max={100}
                   value={profile.sites}
                   onChange={(e) => update('sites', Number(e.target.value))}
                 />
-                {errors.sites && <span className="field-error">{errors.sites}</span>}
+                {errors.sites && <span className="field-error">{t(errors.sites)}</span>}
               </label>
-              <label className="form-field span-two">
-                Monthly services budget (₹)
-                <input
+              <label className="form-field span-two">{t("Monthly services budget (₹)")}<input
                   type="number"
                   min={500}
                   max={1000000}
@@ -328,7 +302,7 @@ export default function Discover() {
                   onChange={(e) => update('budget', Number(e.target.value))}
                 />
                 <input
-                  aria-label="Monthly budget slider"
+                  aria-label={t("Monthly budget slider")}
                   type="range"
                   min={500}
                   max={30000}
@@ -336,8 +310,8 @@ export default function Discover() {
                   value={Math.min(profile.budget, 30000)}
                   onChange={(e) => update('budget', Number(e.target.value))}
                 />
-                <small className="muted">An estimate is fine. We’ll show you what fits.</small>
-                {errors.budget && <span className="field-error">{errors.budget}</span>}
+                <small className="muted">{t("An estimate is fine. We’ll show you what fits.")}</small>
+                {errors.budget && <span className="field-error">{t(errors.budget)}</span>}
               </label>
             </div>
           )}
@@ -374,10 +348,9 @@ export default function Discover() {
               disabled={step === 0}
               onClick={() => setStep((s) => s - 1)}
             >
-              <ArrowLeft size={16} /> Back
-            </button>
+              <ArrowLeft size={16} />{t(" Back")}</button>
             <button className="button primary" disabled={busy} onClick={() => void next()}>
-              {step === 2 ? 'See my matches' : 'Continue'} <ArrowRight size={16} />
+              {step === 2 ? t("See my matches") : t("Continue")} <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -394,29 +367,18 @@ export default function Discover() {
               <ShieldCheck size={23} />
             </span>
           </div>
-          <h3>
-            Made for your business.
-            <br />
-            Ready for your next chapter.
-          </h3>
-          <p>
-            Your answers help us match the right services, work out the details, and keep everything
-            clear.
-          </p>
+          <h3>{t("Made for your business.")}<br />{t("Ready for your next chapter.")}</h3>
+          <p>{t("Your answers help us match the right services, work out the details, and keep everything clear.")}</p>
           <div className="benefit-list">
             <span>
-              <Check size={17} /> No one-size-fits-all bundles
-            </span>
+              <Check size={17} />{t(" No one-size-fits-all bundles")}</span>
             <span>
-              <Check size={17} /> Transparent demo pricing
-            </span>
+              <Check size={17} />{t(" Transparent demo pricing")}</span>
             <span>
-              <Check size={17} /> Your progress, saved as you go
-            </span>
+              <Check size={17} />{t(" Your progress, saved as you go")}</span>
           </div>
           <span className="discovery-note">
-            <HeartHandshake size={20} /> Your goals lead the way.
-          </span>
+            <HeartHandshake size={20} />{t(" Your goals lead the way.")}</span>
         </aside>
       </div>
     </>

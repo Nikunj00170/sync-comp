@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -10,11 +11,12 @@ import {
   ShieldCheck,
   Wifi,
 } from 'lucide-react';
-import { money, productById, quote, type Order } from '@sync/domain';
+import { productById, quote, type Order } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 export default function Services() {
+  const { t, locale } = useI18n();
   const { data, setData, cloud } = useWorkspace(),
     notify = useNotify();
   const [manage, setManage] = useState<{ order: Order; productId: string } | null>(null),
@@ -31,14 +33,12 @@ export default function Services() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">YOUR EVERYDAY, CONNECTED.</span>
-          <h1>
-            Everything working together<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("YOUR EVERYDAY, CONNECTED.")}</span>
+          <h1>{t("Everything working together")}<span className="heading-dot">.</span>
           </h1>
-          <p>A single home for the services that power your business.</p>
+          <p>{t("A single home for the services that power your business.")}</p>
         </div>
-        <Link className="button primary" to="/plans">
-          Add a little more <ArrowRight size={17} />
+        <Link className="button primary" to="/plans">{t("Add a little more ")}<ArrowRight size={17} />
         </Link>
       </div>
       <div className="services-summary">
@@ -47,14 +47,14 @@ export default function Services() {
             <Wifi size={26} />
           </span>
           <span>
-            <strong>{services.length} active demo services</strong>
+            <strong>{services.length}{t(" active demo services")}</strong>
             <small>
               {data.profile.business} · {data.profile.city}
             </small>
           </span>
         </div>
         <span>
-          <small>MONTHLY SERVICES, BEFORE DEMO TAX</small>
+          <small>{t("MONTHLY SERVICES, BEFORE DEMO TAX")}</small>
           <strong>{money(monthly)}</strong>
         </span>
       </div>
@@ -68,44 +68,36 @@ export default function Services() {
                   <Icon size={25} />
                 </span>
                 <span className="badge success">
-                  <span /> Active in demo
-                </span>
+                  <span />{t(" Active in demo")}</span>
               </div>
-              <span className="eyebrow">{p.category}</span>
+              <span className="eyebrow">{t(p.category)}</span>
               <h2>{p.name}</h2>
-              <p>{p.description}</p>
+              <p>{t(p.description)}</p>
               <div className="detail-grid">
-                <span>
-                  Subscription
-                  <strong>
+                <span>{t("Subscription")}<strong>
                     {line.quantity} {p.unit.replace('per ', '')}
-                    {line.quantity > 1 ? 's' : ''}
+                    {line.quantity > 1 ? t("s") : ''}
                   </strong>
                 </span>
-                <span>
-                  Monthly charges<strong>{money(p.price * line.quantity)}</strong>
+                <span>{t("Monthly charges")}<strong>{money(p.price * line.quantity)}</strong>
                 </span>
-                <span>
-                  Location<strong>{data.profile.city}</strong>
+                <span>{t("Location")}<strong>{data.profile.city}</strong>
                 </span>
-                <span>
-                  Reference<strong>{order.id}</strong>
+                <span>{t("Reference")}<strong>{order.id}</strong>
                 </span>
               </div>
               <div className="managed-service-actions">
                 <button
                   className="button secondary"
                   disabled={cloud}
-                  title={cloud ? 'Contact support to change a service.' : undefined}
+                  title={cloud ? t("Contact support to change a service.") : undefined}
                   onClick={() => {
                     setManage({ order, productId: p.id });
                     setQuantity(line.quantity);
                   }}
                 >
-                  <Settings2 size={16} /> Manage service
-                </button>
-                <Link className="text-button" to="/support">
-                  Get help <ArrowUpRight size={16} />
+                  <Settings2 size={16} />{t(" Manage service")}</button>
+                <Link className="text-button" to="/support">{t("Get help ")}<ArrowUpRight size={16} />
                 </Link>
               </div>
             </section>
@@ -115,31 +107,21 @@ export default function Services() {
       {!services.length && (
         <div className="empty-state">
           <Wifi size={42} />
-          <h2>Your next connection starts here.</h2>
-          <Link className="button primary" to="/plans">
-            Find a plan
-          </Link>
+          <h2>{t("Your next connection starts here.")}</h2>
+          <Link className="button primary" to="/plans">{t("Find a plan")}</Link>
         </div>
       )}
       <div className="notice">
         <Headphones size={19} />
-        <span>
-          Need to change more than a quantity? <Link to="/support">Create a support request</Link>{' '}
-          and keep everything in one place.
-        </span>
+        <span>{t("Need to change more than a quantity? ")}<Link to="/support">{t("Create a support request")}</Link>{' '}{t("and keep everything in one place.")}</span>
       </div>
       {manage && (
         <Modal
-          title={'Make ' + productById(manage.productId)?.name + ' work for you'}
+          title={t("Make ") + productById(manage.productId)?.name + t(" work for you")}
           onClose={() => setManage(null)}
         >
-          <p className="muted">
-            Adjust the subscription quantity in this demo. Existing invoice snapshots stay
-            unchanged.
-          </p>
-          <label className="form-field">
-            Subscription quantity
-            <input
+          <p className="muted">{t("Adjust the subscription quantity in this demo. Existing invoice snapshots stay unchanged.")}</p>
+          <label className="form-field">{t("Subscription quantity")}<input
               type="number"
               min={1}
               max={1000}
@@ -148,11 +130,8 @@ export default function Services() {
             />
           </label>
           <div className="summary-lines">
-            <span>
-              Next-period service charge
-              <strong>
-                {money((productById(manage.productId)?.price || 0) * Math.max(0, quantity))}/mo
-              </strong>
+            <span>{t("Next-period service charge")}<strong>
+                {money((productById(manage.productId)?.price || 0) * Math.max(0, quantity))}{t("/mo")}</strong>
             </span>
           </div>
           <button
@@ -190,8 +169,7 @@ export default function Services() {
               setManage(null);
               notify('Demo subscription updated. Existing invoices are unchanged.');
             }}
-          >
-            Save demo subscription <ArrowRight size={17} />
+          >{t("Save demo subscription ")}<ArrowRight size={17} />
           </button>
         </Modal>
       )}

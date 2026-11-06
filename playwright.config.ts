@@ -4,7 +4,7 @@ export default defineConfig({
   fullyParallel: true,
   timeout: 45000,
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://127.0.0.1:5175',
     timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -18,10 +18,10 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'], defaultBrowserType: 'chromium' } },
   ],
   webServer: {
-    command: 'npm run dev',
-    env: { VITE_API_BASE_URL: '', VITE_VOICE_API_BASE_URL: '' },
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run dev --workspace @sync/customer -- --port 5175',
+    env: { VITE_API_BASE_URL: '', VITE_VOICE_API_BASE_URL: '', VITE_VOICE_ENABLED: 'true' },
+    url: 'http://127.0.0.1:5175',
+    reuseExistingServer: false,
     timeout: 30000,
   },
   reporter: [['list'], ['html', { open: 'never' }]],

@@ -163,7 +163,9 @@ it('generates a valid multi-page PDF for a large consolidated invoice', async ()
     p,
     'November 2026',
   );
-  const bytes = await invoicePdf(invoice, p);
+  const { readFileSync } = await import('node:fs');
+  const font = readFileSync(new URL('../apps/customer/src/assets/fonts/NotoSansDevanagari.ttf', import.meta.url));
+  const bytes = await invoicePdf(invoice, p, font);
   const pdf = await PDFDocument.load(bytes);
   expect(pdf.getPageCount()).toBeGreaterThan(1);
   for (const page of pdf.getPages()) expect(page.getHeight()).toBe(842);

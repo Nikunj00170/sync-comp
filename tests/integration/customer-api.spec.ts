@@ -165,3 +165,22 @@ test('pagination loads every customer ticket beyond the first hundred', async ({
   await page.goto('/#/support');
   await expect(page.locator('.ticket-list article')).toHaveCount(101);
 });
+
+test('Hindi controls preserve canonical API fields and cloud records', async ({ page, context }, info) => {
+  const user = await login(context, info.project.name === 'desktop' ? 8 : 9);
+  const profile = { name: 'आन्या शर्मा', business: 'सुरक्षित व्यवसाय', email: 'cloud@example.com', industry: 'professional', city: 'पुणे', tier: 1, employees: 8, sites: 1, budget: 6000, hasGstin: true, priorities: ['productivity'], address: '२४, पुणे, महाराष्ट्र', phone: '' };
+  expect((await context.request.put(api + '/v1/me', { headers: { Authorization: 'Bearer ' + user.access_token }, data: profile })).status()).toBe(200);
+  await page.goto('/#/account');
+  await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('hi');
+  await page.getByLabel('व्यवसाय का नाम', { exact: true }).fill('नया सुरक्षित व्यवसाय');
+  await page.getByLabel('उद्योग', { exact: true }).selectOption('retail');
+  const save = page.getByRole('button', { name: 'प्रोफ़ाइल सहेजें', exact: true });
+  if (info.project.name === 'mobile') await save.tap(); else await save.click();
+  await expect(page.getByText('आपका व्यावसायिक प्रोफ़ाइल खाते में सहेजा गया।', { exact: true })).toBeVisible();
+  const saved = await context.request.get(api + '/v1/me', { headers: { Authorization: 'Bearer ' + user.access_token } });
+  expect(await saved.json()).toMatchObject({ business: 'नया सुरक्षित व्यवसाय', industry: 'retail', priorities: ['productivity'] });
+  await page.reload();
+  await expect(page.getByLabel('व्यवसाय का नाम', { exact: true })).toHaveValue('नया सुरक्षित व्यवसाय');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
+});

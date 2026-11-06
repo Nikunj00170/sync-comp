@@ -1,0 +1,41 @@
+name: Frontend and full-stack verification
+on:
+  push:
+    paths: ['apps/customer/**', 'packages/domain/**', 'shared/data/**', 'services/sync-backend/**', 'scripts/**', 'tests/**', 'package*.json', '*config.ts', '.github/workflows/frontend.yml']
+  pull_request:
+    paths: ['apps/customer/**', 'packages/domain/**', 'shared/data/**', 'services/sync-backend/**', 'scripts/**', 'tests/**', 'package*.json', '*config.ts', '.github/workflows/frontend.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_CHANNEL: chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: services/sync-backend/pom.xml
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:sales-bot
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --workers=2
+      - run: npm run test:integration
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: frontend-test-failures
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

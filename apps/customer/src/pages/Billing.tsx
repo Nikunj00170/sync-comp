@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useState } from 'react';
 import {
   ArrowDownToLine,
@@ -10,12 +11,13 @@ import {
   LockKeyhole,
   Wallet,
 } from 'lucide-react';
-import { makeId, money, productById, type Invoice } from '@sync/domain';
+import { makeId, productById, type Invoice } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { downloadInvoice, downloadStatement } from '../lib/downloads';
 export default function Billing() {
+  const { t, locale } = useI18n();
   const { data, setData, cloud } = useWorkspace(),
     notify = useNotify();
   const [filter, setFilter] = useState('all'),
@@ -30,9 +32,9 @@ export default function Billing() {
     try {
       setBusy(true);
       await downloadInvoice(i, data.profile);
-      notify('Your demo invoice PDF is ready.');
+      notify(t("Your demo invoice PDF is ready."));
     } catch {
-      notify('The PDF could not be generated. Please try again.');
+      notify(t("The PDF could not be generated. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -73,17 +75,16 @@ export default function Billing() {
       ],
     }));
     setPay(null);
-    notify('Demo payment recorded. No real payment was collected.');
+    notify(t("Demo payment recorded. No real payment was collected."));
   }
   return (
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">ONE BILL. EVERY CONNECTION.</span>
-          <h1>
-            Less juggling. More clarity<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("ONE BILL. EVERY CONNECTION.")}</span>
+          <h1>{t("Less juggling. More clarity")}<span className="heading-dot">.</span>
           </h1>
-          <p>Every service, one consolidated view. Just the way it should be.</p>
+          <p>{t("Every service, one consolidated view. Just the way it should be.")}</p>
         </div>
         <button
           className="button secondary"
@@ -93,37 +94,34 @@ export default function Billing() {
               .catch(() => notify('The statement could not be exported. Please try again.'));
           }}
         >
-          <Download size={17} /> Export statement
-        </button>
+          <Download size={17} />{t(" Export statement")}</button>
       </div>
       <div className="billing-overview">
         <section className="billing-hero">
-          <span className="eyebrow">YOUR OUTSTANDING DEMO BALANCE</span>
+          <span className="eyebrow">{t("YOUR OUTSTANDING DEMO BALANCE")}</span>
           <strong>{money(due)}</strong>
           <span>
             {due
-              ? 'Everything you need to take care of, in one place.'
-              : 'All caught up. That’s one less thing on your list.'}
+              ? t("Everything you need to take care of, in one place.")
+              : t("All caught up. That’s one less thing on your list.")}
           </span>
           <div className="button-row">
             {!cloud && due > 0 && (
               <button
                 className="button white"
                 onClick={() => setPay(data.invoices.find((i) => i.status === 'unpaid')!)}
-              >
-                Try demo payment <ArrowRight size={17} />
+              >{t("Try demo payment ")}<ArrowRight size={17} />
               </button>
             )}
             <span className="billing-secure">
-              <LockKeyhole size={15} /> No real payments
-            </span>
+              <LockKeyhole size={15} />{t(" No real payments")}</span>
           </div>
           <div className="billing-hero-rings" aria-hidden="true" />
         </section>
         <section className="panel spend-panel">
           <div>
-            <h2>Where it all goes</h2>
-            <p>{latest ? latest.period + ' · Before demo tax' : 'No invoices yet'}</p>
+            <h2>{t("Where it all goes")}</h2>
+            <p>{latest ? latest.period + t(" · Before demo tax") : t("No invoices yet")}</p>
             <div className="spend-legend">
               {Object.entries(categoryTotals).map(([name, value], i) => (
                 <span key={name}>
@@ -136,7 +134,7 @@ export default function Billing() {
           </div>
           <div className="donut" style={{ background: 'conic-gradient(' + gradient + ')' }}>
             <div>
-              <small>MONTHLY</small>
+              <small>{t("MONTHLY")}</small>
               <strong>{money(latest?.subtotal || 0, false)}</strong>
             </div>
           </div>
@@ -145,10 +143,10 @@ export default function Billing() {
       <section className="panel invoices-panel">
         <div className="section-heading">
           <div>
-            <h2>Your invoice library</h2>
-            <p>All services together. Every detail accounted for.</p>
+            <h2>{t("Your invoice library")}</h2>
+            <p>{t("All services together. Every detail accounted for.")}</p>
           </div>
-          <span className="badge neutral">DEMO INVOICES</span>
+          <span className="badge neutral">{t("DEMO INVOICES")}</span>
         </div>
         <div className="category-tabs">
           {[
@@ -165,11 +163,11 @@ export default function Billing() {
           <table>
             <thead>
               <tr>
-                <th>Invoice</th>
-                <th>Period</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t("Invoice")}</th>
+                <th>{t("Period")}</th>
+                <th>{t("Amount")}</th>
+                <th>{t("Status")}</th>
+                <th>{t("Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -182,7 +180,7 @@ export default function Billing() {
                       </span>
                       <span>
                         <strong>{i.id}</strong>
-                        <small>{i.lines.length} services, one bill</small>
+                        <small>{i.lines.length}{t(" services, one bill")}</small>
                       </span>
                     </button>
                   </td>
@@ -192,22 +190,21 @@ export default function Billing() {
                   </td>
                   <td>
                     <span className={'badge ' + (i.status === 'paid' ? 'success' : 'amber')}>
-                      {i.status === 'paid' ? 'Paid in demo' : 'Unpaid'}
+                      {i.status === 'paid' ? t("Paid in demo") : t("Unpaid")}
                     </span>
                   </td>
                   <td>
                     <div className="table-actions">
                       <button
                         className="icon-button"
-                        aria-label={'Download ' + i.id}
+                        aria-label={t("Download ") + i.id}
                         disabled={busy}
                         onClick={() => pdf(i)}
                       >
                         <ArrowDownToLine size={19} />
                       </button>
                       {!cloud && i.status === 'unpaid' && (
-                        <button className="text-button" onClick={() => setPay(i)}>
-                          Demo pay <ArrowRight size={14} />
+                        <button className="text-button" onClick={() => setPay(i)}>{t("Demo pay ")}<ArrowRight size={14} />
                         </button>
                       )}
                     </div>
@@ -219,8 +216,8 @@ export default function Billing() {
           {!shown.length && (
             <div className="empty-state compact">
               <CheckCircle2 size={35} />
-              <h3>Nothing in this view.</h3>
-              <p>Your invoice library is up to date.</p>
+              <h3>{t("Nothing in this view.")}</h3>
+              <p>{t("Your invoice library is up to date.")}</p>
             </div>
           )}
         </div>
@@ -228,20 +225,16 @@ export default function Billing() {
       <div className="billing-note">
         <ShieldIcon />
         <p>
-          <strong>Every charge, with a little context.</strong>
-          <br />
-          These fictional invoice snapshots include an illustrative 18% demo tax. They are not
-          statutory tax invoices, and no money is collected.
-        </p>
+          <strong>{t("Every charge, with a little context.")}</strong>
+          <br />{t("These fictional invoice snapshots include an illustrative 18% demo tax. They are not statutory tax invoices, and no money is collected.")}</p>
       </div>
       {detail && (
-        <Modal title="A clearer look at your bill" onClose={() => setDetail(null)} wide>
+        <Modal title={t("A clearer look at your bill")} onClose={() => setDetail(null)} wide>
           <div className="invoice-preview">
             <div className="invoice-preview-heading">
-              <div className="brand-text">
-                Accel <span>Telecom</span>
+              <div className="brand-text">{t("Accel ")}<span>{t("Telecom")}</span>
               </div>
-              <span className="badge neutral">DEMO INVOICE</span>
+              <span className="badge neutral">{t("DEMO INVOICE")}</span>
             </div>
             <div className="section-heading">
               <div>
@@ -265,27 +258,23 @@ export default function Billing() {
               );
             })}
             <div className="summary-lines">
-              <span>
-                Service charges<strong>{money(detail.subtotal)}</strong>
+              <span>{t("Service charges")}<strong>{money(detail.subtotal)}</strong>
               </span>
-              <span>
-                Illustrative demo tax (18%)<strong>{money(detail.tax)}</strong>
+              <span>{t("Illustrative demo tax (18%)")}<strong>{money(detail.tax)}</strong>
               </span>
-              <span className="summary-total">
-                Total<strong>{money(detail.total)}</strong>
+              <span className="summary-total">{t("Total")}<strong>{money(detail.total)}</strong>
               </span>
             </div>
-            <p className="footnote">Demonstration only. Not a tax invoice.</p>
+            <p className="footnote">{t("Demonstration only. Not a tax invoice.")}</p>
             <button className="button primary full" disabled={busy} onClick={() => pdf(detail)}>
-              <Download size={17} /> Download PDF
-            </button>
+              <Download size={17} />{t(" Download PDF")}</button>
           </div>
         </Modal>
       )}
       {pay && (
-        <Modal title="A simpler way to stay on top." onClose={() => setPay(null)}>
+        <Modal title={t("A simpler way to stay on top.")} onClose={() => setPay(null)}>
           <div className="payment-amount">
-            <span className="muted">DEMO PAYMENT FOR {pay.id}</span>
+            <span className="muted">{t("DEMO PAYMENT FOR ")}{pay.id}</span>
             <strong>{money(pay.total)}</strong>
           </div>
           <div className="payment-methods">
@@ -310,13 +299,9 @@ export default function Billing() {
           </div>
           <div className="notice">
             <LockKeyhole size={19} />
-            <span>
-              This is a payment simulation. No card, bank, or UPI details are needed. No money will
-              be collected.
-            </span>
+            <span>{t("This is a payment simulation. No card, bank, or UPI details are needed. No money will be collected.")}</span>
           </div>
-          <button className="button primary full" onClick={payDemo}>
-            Simulate successful payment <ArrowRight size={17} />
+          <button className="button primary full" onClick={payDemo}>{t("Simulate successful payment ")}<ArrowRight size={17} />
           </button>
         </Modal>
       )}
