@@ -14,4 +14,9 @@ public record Order(
     @JsonProperty("slot") String slot,
     @JsonProperty("events") List<TimelineEvent> events
 ) {
+    public Order {
+        lines = java.util.List.copyOf(lines);
+        events = java.util.List.copyOf(events);
+    }
+
 }

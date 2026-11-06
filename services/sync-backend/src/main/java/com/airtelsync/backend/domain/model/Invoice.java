@@ -16,6 +16,10 @@ public record Invoice(
     @JsonProperty("paymentReference") String paymentReference,
     @JsonProperty("billedTo") BilledTo billedTo
 ) {
+    public Invoice {
+        lines = java.util.List.copyOf(lines);
+    }
+
     public record BilledTo(
         @JsonProperty("name") String name,
         @JsonProperty("business") String business,

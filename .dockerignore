@@ -1,0 +1,10 @@
+**
+!services/
+!services/sync-backend/
+!services/sync-backend/**
+!shared/
+!shared/data/
+!shared/data/catalogue.json
+services/sync-backend/target/
+services/sync-backend/.env*
+services/sync-backend/.idea/

@@ -150,6 +150,13 @@ class QuoteServiceTest {
         assertEquals(12500 * 12, quote.monthly());
     }
     @Test
+    void largeQuantitiesKeepExactTaxWithoutIntegerOverflow() {
+        var q = quoteService.quote(java.util.List.of(new CartLine("P06", 1000)), TestFixtures.manufacturingProfile());
+        assertEquals(2500000000L, q.monthly());
+        assertEquals(450000000L, q.tax());
+        assertEquals(2950000000L, q.total());
+    }
+    @Test
     void taxDoesNotOverflowForValidMultiUnitCart() {
         Quote quote = quoteService.quote(List.of(new CartLine("P05", 3)), TestFixtures.demoProfile());
         assertTrue(quote.errors().isEmpty());

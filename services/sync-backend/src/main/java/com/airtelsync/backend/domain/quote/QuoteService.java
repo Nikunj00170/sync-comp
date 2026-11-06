@@ -65,12 +65,12 @@ public class QuoteService {
 
         return new Quote(
             CatalogueService.CATALOGUE_VERSION,
-            new ArrayList<>(lines),
+            List.copyOf(lines),
             monthly,
             setup,
             tax,
             monthly + tax,
-            errors
+            List.copyOf(errors)
         );
     }
 }

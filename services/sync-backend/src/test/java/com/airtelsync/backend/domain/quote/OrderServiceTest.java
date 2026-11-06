@@ -237,4 +237,12 @@ class OrderServiceTest {
             OrderStatus.active
         ), steps);
     }
+    @Test
+    void transitionEventSnapshotsCannotBeMutatedByCallers() {
+        var order = orderService.makeOrder(TestFixtures.basicCart(), TestFixtures.demoProfile(), TestFixtures.verifiedKyc());
+        var next = orderService.nextOrder(order);
+        assertThrows(UnsupportedOperationException.class, () -> next.events().clear());
+        assertThrows(UnsupportedOperationException.class, () -> next.lines().clear());
+        assertEquals(1, order.events().size());
+    }
 }
