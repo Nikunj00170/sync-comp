@@ -9,8 +9,9 @@ export default defineConfig({
     timezoneId: 'Asia/Kolkata',
     channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
     trace: 'retain-on-failure',
+    launchOptions: { slowMo: process.env.SYNC_RECORD_DEMO === 'true' ? 180 : 0 },
     screenshot: 'only-on-failure',
-    video: process.env.SYNC_RECORD_DEMO === 'true' ? 'on' : 'off',
+    video: process.env.SYNC_RECORD_DEMO === 'true' ? { mode: 'on', size: { width: 1440, height: 1000 } } : 'off',
   },
   projects: [
     {

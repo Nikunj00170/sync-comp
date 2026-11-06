@@ -63,6 +63,8 @@ Real AWS/Cognito deployment is separate from local integration testing. See
 
 ## Assistant
 
+Typed chat is also available with `VITE_CHAT_ENABLED=true`, using the same local gateway and a Gemini key without microphone/Sarvam. It has separate conversation consent and can clear the transient history. Do not share identity documents or secrets in chat.
+
 The assistant supports speech-pause sending, continuous listening, detected-language
 replies, provider quota/key fallbacks and session cleanup. It still needs the
 separate server-side voice service and provider credentials; never expose API keys

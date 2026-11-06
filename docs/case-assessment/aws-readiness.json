@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-06T19:23:42.320215+00:00",
+  "checks": {
+    "apiHealth": {
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "allowOrigin": "https://ded7l7f98x66l.cloudfront.net",
+      "response": {
+        "status": "ok",
+        "service": "sync-prototype-api",
+        "mode": "infrastructure-test"
+      }
+    },
+    "apiCatalogue": {
+      "httpStatus": 404,
+      "contentType": "application/json",
+      "allowOrigin": null,
+      "productCount": 0
+    },
+    "apiUnauthenticatedProfile": {
+      "httpStatus": 404,
+      "contentType": "application/json",
+      "allowOrigin": null
+    },
+    "cognitoDiscovery": {
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "allowOrigin": "*",
+      "issuerMatches": true
+    },
+    "cognitoJwks": {
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "allowOrigin": "*",
+      "signingKeyCount": 2
+    },
+    "frontend": {
+      "httpStatus": 200,
+      "contentType": "text/html",
+      "allowOrigin": null
+    }
+  },
+  "iamCredentials": {
+    "environmentConfigured": false,
+    "sharedConfigPresent": false,
+    "sharedCredentialsPresent": false
+  }
+}

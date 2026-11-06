@@ -31,15 +31,20 @@ class KycChecksTest {
             "Balaji Realty LLP", "Saffron Unisex Salon", "Neelgiri Physio Clinic", "Green Leaf Legal Associates",
             "Kaveri Insurance Advisors", "Kaveri Stays LLP", "Trinity Bake House Pvt Ltd", "Star Electronics"};
         int count = 0;
+        var reports = new ArrayList<java.util.Map<String, Object>>();
         for (int n = 1; n <= 12; n++) {
             var input = applicant(n); count += input.size();
             var report = checks.assess(input, businesses[n - 1], true, today);
+            reports.add(java.util.Map.of("applicant", "K%02d".formatted(n), "status", report.status(), "issues", report.issues(),
+                "documents", report.documents().stream().map(d -> java.util.Map.of("kind", d.kind(), "issues", d.issues())).toList()));
             if (n == 5) assertEquals("ready", report.status(), report.toString());
             else if (n == 1) assertTrue(report.documents().stream().anyMatch(d -> d.issues().contains("GSTIN_NOT_ACTIVE")));
             else if (n == 11) assertTrue(report.documents().stream().anyMatch(d -> d.issues().contains("ADDRESS_PROOF_DATE_OUTSIDE_90_DAYS")));
             if (n == 2 || n == 4) assertEquals("needs_review", report.status());
         }
         assertEquals(47, count);
+        Files.writeString(Path.of("target/case-kyc-report.json"), new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(
+            java.util.Map.of("date", today.toString(), "images", count, "applicants", reports)) + "\n");
     }
     @Test void businessMismatchAndUnknownBytesNeverPass() throws Exception {
         assertEquals("needs_review", checks.assess(applicant(5), "Another business", true, today).status());

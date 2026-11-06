@@ -76,8 +76,7 @@ use the upload URL's signature and the returned headers. Configure lifecycle
 cleanup for abandoned uploads according to the retention policy.
 
 S3 metadata validation proves upload size/type, not actual MIME contents,
-authenticity, malware safety or identity verification. No download endpoint or
-live KYC processor is enabled. A real provider adapter and its authorization rules
+authenticity, malware safety or identity verification. No download endpoint or live government identity provider is enabled. Consented synthetic registry assessment reads owned objects; `SYNC_KYC_OCR=textract` optionally calls Textract for clear PNG/JPEG images up to 5 MiB, with `textract:DetectDocumentText` permission. Default `fixtures` uses cached Tesseract output only for exact supplied synthetic image bytes. Both paths remain mock KYC, not real approval. A real provider adapter and its authorization rules
 must precede real purchases; `demo_verified` remains a simulation.
 
 Implementation references: [DynamoDB transactions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html),

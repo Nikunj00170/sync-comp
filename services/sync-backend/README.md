@@ -3,7 +3,7 @@
 Java 21 / Spring Boot 4.1.2 modular monolith serving the existing React and
 Capacitor applications. All seven existing customer API adapter operations are
 implemented. Checkout, KYC, recommendations, tickets and notifications have
-additional documented APIs. The frontend remains unchanged.
+additional documented APIs. The customer frontend now uses these APIs; see the root full-stack browser test runner.
 
 ## Run and verify
 
@@ -40,6 +40,7 @@ not loaded automatically by Spring.
 | KYC_MODE | `mock`; demo operations also require explicit opt-in |
 | SYNC_STORAGE | `memory`; set `dynamodb` for durable records |
 | SYNC_DOCUMENTS | `memory`; set `s3` for private document storage |
+| SYNC_KYC_OCR | `fixtures` for supplied specimen bytes, or `textract` for supported images with IAM permission |
 | SYNC_DEMO_ENABLED | `false`; explicit opt-in for simulated checkout/KYC |
 | SYNC_PUBLIC_BASE_URL | `http://localhost:8080`; local upload URL origin |
 | FRONTEND_ORIGIN | Existing CloudFront origin; used for cloud CORS |
@@ -94,7 +95,9 @@ Errors use `{"error":{"code":"...","message":"...","details":[]}}`.
 | POST | /v1/documents/{id}/complete | Check storage metadata and attach document |
 | DELETE | /v1/documents/{id} | Remove document, revoke demo KYC, free slot |
 | GET, PUT | /v1/kyc | Read KYC / record `{provider,consent}` |
-| POST | /v1/kyc/demo-verification | Demo-only verification |
+| POST | /v1/kyc/assessment | Consent-gated OCR and synthetic registry checks |
+| POST | /v1/registries/lookup | One masked synthetic GST/Udyam lookup after consent |
+| POST | /v1/kyc/demo-verification | Demo-only verification after passing assessment |
 | GET, POST | /v1/tickets | List/create own support tickets |
 | GET | /v1/tickets/{id} | Own support ticket |
 | POST | /v1/tickets/{id}/resolve | Resolve own ticket |
@@ -122,9 +125,12 @@ still return quote eligibility errors in `quote.errors`, matching the domain.
 5. PUT exact bytes to `uploadUrl` using returned `headers`. In memory mode, include
    the customer's bearer token. With S3, use its signed URL without Cognito auth.
 6. POST `/v1/documents/{documentId}/complete`. Completion checks storage metadata;
-   it does not verify identity. Repeat for a second document.
+   it does not verify identity. Upload registration, address proof and signatory ID.
+   Default fixture OCR accepts exact supplied images; K05 is a readable active example.
+   Use a matching business profile (Balaji Realty LLP for K05).
 7. PUT `{"provider":"digio","consent":true}` (or `digilocker`) to `/v1/kyc`,
-   then POST `/v1/kyc/demo-verification`. These provider names are demo choices.
+   then POST `/v1/kyc/assessment`. Resolve all review findings before POST
+   `/v1/kyc/demo-verification`. These provider names are demo choices.
 8. POST `{"lines":[{"productId":"P01","quantity":1}],"demoConsent":true}` to
    `/v1/orders`, with an `Idempotency-Key` of 8–128 letters/digits/underscores/hyphens.
 9. GET orders, invoices and notifications. The checkout stores them atomically.

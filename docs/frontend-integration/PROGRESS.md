@@ -64,3 +64,14 @@ SDK was found and an Android debug APK build succeeded after setting ANDROID_HOM
 Final combined browser/full-stack reruns and the new default-development-CORS test
 were pending when the project case/data audit was requested. This checkpoint does
 not claim live AWS, Cognito, provider or device-runtime verification.
+
+## Case alignment and AWS verification — 7 November 2026
+
+- Pushed all prior work first as checkpoint `4dee8b1` on `feature/frontend-integration-i18n`.
+- Added Smart KYC/registry APIs, conservative OCR checks and supplied-specimen tests in `c3ff042`; added consented typed GenAI discovery in `9aac6d6`.
+- Read the case PDF and only the student-visible data pack. Audited all 5,000 leads/25 products/registries and confirmed all 47 image bytes match repository specimens. Aggregate findings, applicant decisions, architecture, ten-slide business-case source, privacy note and 43-second local demo are under `docs/case-assessment`.
+- Final verification: clean backend build with 187 passing tests; 23 frontend/domain tests; 23 assistant tests; 24 desktop/mobile browser tests; 10 real React–Spring cases including supplied valid/cancelled registration documents and consent revocation; production web build passed. Test output directories are isolated so evidence is retained. Docker daemon is unavailable, so container runtime was not verified.
+- Public AWS inspection found reachable CloudFront/Cognito, but the API still identifies as `sync-prototype-api` infrastructure-test and returns 404 for `/v1/catalogue` and `/v1/me`. No private-resource verification without IAM/SSO credentials. No cloud changes made.
+- Live Gemini returned one valid discovery response; subsequent local HTTP gateway request returned 429. Provider quota must be resolved; keys alone are insufficient. Speech/Textract/live identity providers were not called.
+
+- Updated Android debug APK built successfully with the configured Android SDK and Java 21 (184 Gradle tasks; no emulator/device runtime or native cloud sign-in claimed).

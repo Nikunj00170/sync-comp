@@ -176,3 +176,26 @@ test('Hindi controls preserve canonical API fields and cloud records', async ({ 
   await expect(page.getByLabel('व्यवसाय का नाम', { exact: true })).toHaveValue('नया सुरक्षित व्यवसाय');
   await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
 });
+
+
+test('supplied cancelled-registration documents require review and revoked consent stops extraction', async ({page, context}, info) => {
+  const user = await login(context, info.project.name === 'desktop' ? 10 : 11);
+  const headers = {Authorization: 'Bearer ' + user.access_token};
+  const profile = {name: 'Neha Kaur', business: 'Vindhya Tours & Travels', email:'review@example.com', industry:'professional', city:'Visakhapatnam', tier:2, employees:3, sites:1, budget:5000, hasGstin:true, priorities:['connectivity'],address:'Shop/Unit 1, Tech Park Road, Visakhapatnam, Andhra Pradesh - 118383',phone:''};
+  expect((await context.request.put(api + '/v1/me',{headers,data:profile})).status()).toBe(200);
+  expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
+  await page.goto('/#/verification');
+  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K01_gst_certificate.png','case_source/kyc_documents/K01_address_proof.png','case_source/kyc_documents/K01_signatory_id.png']);
+  await expect(page.getByText('K01_signatory_id.png',{exact:true})).toBeVisible();
+  const consent = page.getByRole('checkbox',{name:/I consent to OCR extraction/});
+  await consent.check();
+  await page.getByRole('button',{name:'Complete demo verification'}).click();
+  await expect(page.getByText('Documents need review',{exact:true})).toBeVisible();
+  await expect(page.getByText(/GST registration is cancelled or suspended/)).toBeVisible();
+  expect((await (await context.request.get(api + '/v1/kyc',{headers})).json()).status).toBe('pending');
+  await consent.uncheck();
+  await expect(consent).not.toBeChecked();
+  expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
+  expect((await context.request.post(api + '/v1/registries/lookup',{headers,data:{kind:'gstin',identifier:'37IHKXV5167L1ZS'}})).status()).toBe(409);
+});
