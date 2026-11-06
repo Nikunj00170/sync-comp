@@ -1,3 +1,5 @@
+import { withGeminiKey } from './gemini-keys.mjs';
+import { recordGeminiQuota } from './gemini-quota.mjs';
 import { readFile } from 'node:fs/promises';
 
 export const source = 'case_source/product_catalogue.csv';
@@ -75,7 +77,10 @@ export function renderSelection(selection, products) {
   return `Relevant catalogue options (eligibility and availability still need confirmation):\n\n${cards.join('\n\n')}\n\nPrices are catalogue ranges, not a final quote. Taxes, discounts and exact address availability are not specified in this catalogue.`;
 }
 
-export async function answerQuestion(
+export async function answerQuestion(question, options) {
+  return withGeminiKey(options, (selected) => answerQuestionForKey(question, selected));
+}
+async function answerQuestionForKey(
   question,
   { products, apiKey, model = 'gemini-3.5-flash', fetchImpl = fetch },
 ) {
@@ -102,6 +107,7 @@ export async function answerQuestion(
       }),
     },
   );
+  if (response.status === 429) throw await recordGeminiQuota(response, apiKey, model);
   if (!response.ok)
     throw new Error(
       `Gemini request failed (HTTP ${response.status}); check credentials, model access and quota`,

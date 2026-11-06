@@ -1,11 +1,65 @@
 import { useEffect, useRef, useState } from 'react';
+import { VoiceOrb } from './VoiceOrb';
+import { createVoiceActivity } from '../lib/voiceActivity';
 
-type Turn = { transcript: string; answer: string; audios: string[]; warning?: string };
+type Bundle = {
+  items: {
+    product_id: string;
+    name: string;
+    quantity: number;
+    monthlyMin: number;
+    monthlyMax: number;
+    reference: string;
+  }[];
+  monthlyMin: number;
+  monthlyMax: number;
+  setup: number;
+  note: string;
+};
+type Turn = {
+  transcript: string;
+  answer: string;
+  audios: string[];
+  warning?: string;
+  language?: string;
+  sessionId?: string;
+  bundle?: Bundle | null;
+};
 export function VoiceAdvisor() {
+  const surface = useRef<HTMLDivElement | null>(null);
+  const speechHeard = useRef(false);
+  const [autoSendAvailable, setAutoSendAvailable] = useState(true);
+  const [pauseMs, setPauseMs] = useState(1400);
   const [state, setState] = useState('Ready');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [error, setError] = useState('');
   const [consent, setConsent] = useState(false);
+  const sessionId = useRef('');
+  const continuous = useRef(false);
+  const [autoContinue, setAutoContinue] = useState(true);
+  const startNext = useRef<() => void>(() => {});
+  const detector = useRef<{
+    context: AudioContext;
+    interval: ReturnType<typeof setInterval>;
+  } | null>(null);
+  function stopDetector() {
+    surface.current?.style.setProperty('--voice-level', '0');
+    if (detector.current) {
+      clearInterval(detector.current.interval);
+      void detector.current.context.close();
+      detector.current = null;
+    }
+  }
+  function clearSession() {
+    if (sessionId.current) {
+      void fetch('/api/voice/session', {
+        method: 'DELETE',
+        headers: { 'X-Voice-Session': sessionId.current },
+        keepalive: true,
+      }).catch(() => {});
+      sessionId.current = '';
+    }
+  }
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const player = useRef<HTMLAudioElement | null>(null);
@@ -14,6 +68,7 @@ export function VoiceAdvisor() {
   const generation = useRef(0);
   const mounted = useRef(true);
   function stopResources() {
+    stopDetector();
     clearTimeout(timer.current);
     if (recorder.current?.state === 'recording') {
       recorder.current.onstop = null;
@@ -27,27 +82,31 @@ export function VoiceAdvisor() {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      continuous.current = false;
+      clearSession();
       generation.current++;
       stopResources();
     };
   }, []);
   function end() {
+    continuous.current = false;
     generation.current++;
     stopResources();
     setState('Ready');
   }
-  async function play(audios: string[], token: number) {
+  async function play(audios: string[], token: number, resume = false) {
     if (token !== generation.current || !mounted.current) return;
     const [first, ...rest] = audios;
     if (!first) {
       setState('Ready');
+      if (resume && continuous.current) startNext.current();
       return;
     }
     setState('Speaking');
     const audio = new Audio(`data:audio/wav;base64,${first}`);
     player.current = audio;
     audio.onended = () => {
-      void play(rest, token);
+      void play(rest, token, resume);
     };
     audio.onerror = () => {
       if (token === generation.current) {
@@ -71,7 +130,9 @@ export function VoiceAdvisor() {
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined')
         throw new Error('Microphone recording requires a supported browser on localhost or HTTPS.');
-      const media = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const media = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       if (token !== generation.current || !mounted.current) {
         media.getTracks().forEach((t) => t.stop());
         return;
@@ -93,30 +154,30 @@ export function VoiceAdvisor() {
         setError('Microphone recording failed. Please try again.');
       };
       recording.onstop = async () => {
+        stopDetector();
         clearTimeout(timer.current);
         media.getTracks().forEach((t) => t.stop());
         if (token !== generation.current || !mounted.current) return;
         setState('Thinking');
         controller.current = new AbortController();
-        const timeout = setTimeout(() => controller.current?.abort(), 180_000);
+        const timeout = setTimeout(() => controller.current?.abort(), 240_000);
         try {
-          const history = turns
-            .slice(-2)
-            .map((t) => `Customer: ${t.transcript}\nAdvisor: ${t.answer}`)
-            .join('\n')
-            .slice(-2200);
           const response = await fetch('/api/voice/turn', {
             method: 'POST',
-            headers: { 'Content-Type': mimeType, 'X-Voice-History': encodeURIComponent(history) },
+            headers: {
+              'Content-Type': mimeType,
+              ...(sessionId.current ? { 'X-Voice-Session': sessionId.current } : {}),
+            },
             body: new Blob(chunks, { type: mimeType }),
             signal: controller.current.signal,
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || 'Voice request failed');
           if (token !== generation.current || !mounted.current) return;
+          if (result.sessionId) sessionId.current = result.sessionId;
           setTurns((previous) => [...previous, result]);
           if (result.warning) setError(result.warning);
-          await play(result.audios, token);
+          await play(result.audios, token, !result.warning);
         } catch (e) {
           if (token === generation.current && mounted.current) {
             setError(e instanceof Error ? e.message : 'Voice request failed');
@@ -126,10 +187,49 @@ export function VoiceAdvisor() {
           clearTimeout(timeout);
         }
       };
+      speechHeard.current = false;
       recording.start();
       setState('Listening');
+      // Stop after speech followed by 1.4 seconds of quiet; manual Send remains available.
+      let analysisContext: AudioContext | undefined;
+      let detectedAutomatically = false;
+      try {
+        const context = new AudioContext();
+        analysisContext = context;
+        await context.resume();
+        if (token !== generation.current || recording.state !== 'recording') {
+          void context.close();
+          return;
+        }
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 1024;
+        context.createMediaStreamSource(media).connect(analyser);
+        const samples = new Float32Array(analyser.fftSize);
+        const activity = createVoiceActivity(pauseMs);
+        detectedAutomatically = true;
+        setAutoSendAvailable(true);
+        const interval = setInterval(() => {
+          analyser.getFloatTimeDomainData(samples);
+          const rms = Math.sqrt(samples.reduce((n, x) => n + x * x, 0) / samples.length);
+          const result = activity(rms, performance.now());
+          speechHeard.current = result.heard;
+          surface.current?.style.setProperty('--voice-level', String(result.level));
+          if (result.finished && recording.state === 'recording') recording.stop();
+        }, 100);
+        detector.current = { context, interval };
+      } catch {
+        setAutoSendAvailable(false);
+        void analysisContext?.close();
+        /* Browser may lack audio analysis. Use Send question or the time limit. */
+      }
+
+      if (token !== generation.current || recording.state !== 'recording') return;
       timer.current = setTimeout(() => {
-        if (recording.state === 'recording') recording.stop();
+        if (recording.state !== 'recording') return;
+        if (detectedAutomatically && !speechHeard.current) {
+          end();
+          setError('No speech detected. Start again when you’re ready.');
+        } else recording.stop();
       }, 25_000);
     } catch (e) {
       if (token === generation.current && mounted.current) {
@@ -139,12 +239,30 @@ export function VoiceAdvisor() {
       }
     }
   }
+  startNext.current = () => {
+    void start();
+  };
   return (
     <div className="voice-advisor">
-      <p>
-        Ask about business plans from our product catalogue. Speak for up to 25 seconds, then send
-        your question. Replies are spoken in English.
-      </p>
+      <VoiceOrb state={state} surface={surface} />
+      <div className="voice-intro">
+        <h3>
+          {state === 'Listening'
+            ? 'Go ahead. I’m listening.'
+            : state === 'Thinking'
+              ? 'Finding your best fit…'
+              : state === 'Speaking'
+                ? 'A little clarity, out loud.'
+                : 'Let’s find your business a better connection.'}
+        </h3>
+        <p>
+          {state === 'Listening'
+            ? 'Speak naturally, then pause. Your reply sends automatically.'
+            : state === 'Speaking'
+              ? 'I’ll listen again when this reply finishes.'
+              : 'One conversation. Your language. A bundle built around you.'}
+        </p>
+      </div>
       <label className="check-label">
         <input
           type="checkbox"
@@ -155,17 +273,57 @@ export function VoiceAdvisor() {
         I agree to send my recording and conversation context to Sarvam AI for speech and Google
         Gemini for a catalogue-based reply.
       </label>
-      <p role="status" aria-live="polite">
+      <label className="check-label">
+        <input
+          type="checkbox"
+          checked={autoContinue}
+          onChange={(e) => {
+            setAutoContinue(e.target.checked);
+            continuous.current = e.target.checked && state !== 'Ready';
+          }}
+        />{' '}
+        Continue listening after each reply
+      </label>
+      <label className="voice-pause-control">
+        Pause before sending
+        <select
+          aria-label="Pause before sending"
+          value={pauseMs}
+          disabled={state !== 'Ready'}
+          onChange={(e) => setPauseMs(Number(e.target.value))}
+        >
+          <option value={1000}>Quick · 1 second</option>
+          <option value={1400}>Natural · 1.4 seconds</option>
+          <option value={2200}>Relaxed · 2.2 seconds</option>
+        </select>
+      </label>
+      {!autoSendAvailable && (
+        <p className="notice" role="note">
+          Automatic pause detection is unavailable in this browser. Use Send question to finish your
+          turn.
+        </p>
+      )}
+      <p className="voice-status" role="status" aria-live="polite">
         {state}
       </p>
       <div className="form-navigation">
         {state === 'Ready' && (
-          <button className="button primary" disabled={!consent} onClick={() => void start()}>
+          <button
+            className="button primary"
+            disabled={!consent}
+            onClick={() => {
+              continuous.current = autoContinue;
+              void start();
+            }}
+          >
             Speak to advisor
           </button>
         )}
         {state === 'Listening' && (
-          <button className="button primary" onClick={() => recorder.current?.stop()}>
+          <button
+            className="text-button voice-send-fallback"
+            onClick={() => recorder.current?.stop()}
+          >
             Send question
           </button>
         )}
@@ -178,6 +336,7 @@ export function VoiceAdvisor() {
           className="text-button"
           onClick={() => {
             end();
+            clearSession();
             setTurns([]);
             setError('');
           }}
@@ -186,23 +345,42 @@ export function VoiceAdvisor() {
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
-      {turns.map((turn, i) => (
-        <article key={i} className="panel" style={{ marginTop: 16, overflowWrap: 'anywhere' }}>
-          <h3>You said</h3>
-          <p>{turn.transcript}</p>
-          <h3>Catalogue advisor</h3>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{turn.answer}</p>
-          {!!turn.audios.length && (
-            <button
-              className="button secondary"
-              disabled={state !== 'Ready'}
-              onClick={() => void play(turn.audios, generation.current)}
-            >
-              Replay reply
-            </button>
-          )}
-        </article>
-      ))}
+      <div className="voice-transcript">
+        {turns.map((turn, i) => (
+          <article key={i} className="panel" style={{ marginTop: 16, overflowWrap: 'anywhere' }}>
+            <h3>You said</h3>
+            <p>{turn.transcript}</p>
+            <h3>Catalogue advisor {turn.language && <small>({turn.language})</small>}</h3>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{turn.answer}</p>
+            {turn.bundle && (
+              <div>
+                <h4>Suggested bundle</h4>
+                {turn.bundle.items.map((item) => (
+                  <p key={item.product_id}>
+                    {item.quantity} × {item.name}: INR {item.monthlyMin}–{item.monthlyMax}/month
+                    <br />
+                    <small>Source: {item.reference}</small>
+                  </p>
+                ))}
+                <p>
+                  Total: INR {turn.bundle.monthlyMin}–{turn.bundle.monthlyMax}/month · Setup: INR{' '}
+                  {turn.bundle.setup}
+                </p>
+                <small>{turn.bundle.note}</small>
+              </div>
+            )}
+            {!!turn.audios.length && (
+              <button
+                className="button secondary"
+                disabled={state !== 'Ready'}
+                onClick={() => void play(turn.audios, generation.current)}
+              >
+                Replay reply
+              </button>
+            )}
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

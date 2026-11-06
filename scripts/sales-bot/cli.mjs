@@ -11,6 +11,7 @@ try {
       await answerQuestion(process.argv.slice(2).join(' '), {
         products,
         apiKey: process.env.GEMINI_API_KEY,
+        apiKeys: [process.env.GEMINI_API_KEY_2],
         model: process.env.GEMINI_MODEL,
       }),
     );
