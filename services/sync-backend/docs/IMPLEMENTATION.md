@@ -58,3 +58,14 @@ are limited to eight reservations, and cannot overwrite content. KYC consent,
 provider selection, revocation and demo verification are customer-scoped and audited.
 Changing documents or consent invalidates demo verification. No live verification is
 claimed; demo verification requires `SYNC_DEMO_ENABLED=true`.
+
+Phase 3 verification: 153 tests, 0 failures/errors/skips; Java 21 clean verify.
+
+## Phase 4 — Support and notifications
+
+Added ticket creation, list/detail and customer resolution using the existing UI
+fields; notifications are created atomically with tickets and checkout. Notification
+read state and all ticket operations enforce authenticated ownership. Lists use
+bounded pagination. Demo order advancement requires both trusted admin scope and
+the demo flag and operates only on that principal's records. No external support
+message or payment is sent.
