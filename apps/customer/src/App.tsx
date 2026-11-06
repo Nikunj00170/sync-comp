@@ -27,6 +27,7 @@ import { catalogue } from '@sync/domain';
 import { useWorkspace } from './lib/store';
 import { useNotify } from './lib/feedback';
 import { VoiceAdvisor } from './components/VoiceAdvisor';
+import { ChatAdvisor } from './components/ChatAdvisor';
 import { Brand } from './components/Brand';
 import { Modal } from './components/Modal';
 import Dashboard from './pages/Dashboard';
@@ -440,6 +441,7 @@ export default function App() {
       )}
       {advisor && (
         <Modal title={t("Meet your next advantage")} onClose={() => setAdvisor(false)}>
+          <ChatAdvisor onApplied={() => setAdvisor(false)} />
           <VoiceAdvisor onApplied={() => setAdvisor(false)} />
         </Modal>
       )}

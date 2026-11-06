@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
+  outputDir: './test-results/e2e',
   fullyParallel: true,
   timeout: 45000,
   use: {
@@ -19,7 +20,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev --workspace @sync/customer -- --port 5175',
-    env: { VITE_API_BASE_URL: '', VITE_VOICE_API_BASE_URL: '', VITE_VOICE_ENABLED: 'true' },
+    env: { VITE_API_BASE_URL: '', VITE_VOICE_API_BASE_URL: '', VITE_VOICE_ENABLED: 'true', VITE_CHAT_ENABLED: 'true' },
     url: 'http://127.0.0.1:5175',
     reuseExistingServer: false,
     timeout: 30000,

@@ -4,6 +4,7 @@ import { converse, buildBundle } from './conversation.mjs';
 import { loadCatalogue } from './catalogue.mjs';
 const profile = {
   business: 'shop',
+  currentTools: 'none',
   needs: 'broadband and backup',
   budget: 2000,
   employees: 3,
@@ -174,7 +175,7 @@ test('an unambiguous numeric answer updates the profile and asks the next questi
     {
       language: 'en-IN',
       awaiting: 'budget',
-      requirements: { business: 'shop', needs: 'internet' },
+      requirements: { business: 'shop', needs: 'internet', currentTools: 'none' },
     },
     {
       products: [],
