@@ -27,7 +27,9 @@ class HealthControllerTest {
 
 	@BeforeEach
 	void setup() {
-		mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+		mockMvc = MockMvcBuilders.webAppContextSetup(context)
+            .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+            .build();
 	}
 
 	@Test

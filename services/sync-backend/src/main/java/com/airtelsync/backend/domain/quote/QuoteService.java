@@ -60,7 +60,8 @@ public class QuoteService {
             setup += (long) product.setup() * line.quantity();
         }
 
-        long tax = (monthly * CatalogueService.DEMO_TAX_BPS + 5000) / 10000;
+        // Amounts are paise; use integer rounding to avoid overflow and floating-point loss.
+        long tax = (monthly * CatalogueService.DEMO_TAX_BPS + 5000L) / 10000L;
 
         return new Quote(
             CatalogueService.CATALOGUE_VERSION,
