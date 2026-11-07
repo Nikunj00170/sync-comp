@@ -86,7 +86,7 @@ export default function Account() {
       </div>
       <div className="account-layout">
         <div>
-          <form className="panel" onSubmit={save}>
+          <form className="panel" onSubmit={save} hidden={cloud && accountStatus !== 'ready'}>
             <div className="section-heading">
               <div>
                 <h2>{t("Business details")}</h2>

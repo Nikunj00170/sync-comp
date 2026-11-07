@@ -40,6 +40,17 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
     headers: { Authorization: 'Bearer ' + user.access_token },
   });
   expect((await saved.json()).business).toBe('Balaji Realty LLP');
+  const returning = await browser.newContext();
+  try {
+    await login(returning, info.project.name === 'desktop' ? 0 : 1);
+    const account = await returning.newPage();
+    await account.goto('http://127.0.0.1:5174/#/account');
+    await expect(account.getByText('Customer API connected.', { exact: true })).toBeVisible();
+    await expect(account.getByLabel('Business name', { exact: true })).toHaveValue('Balaji Realty LLP');
+    await expect(account.getByLabel('City', { exact: true })).toHaveValue('Bengaluru');
+  } finally {
+    await returning.close();
+  }
   await page.goto('/#/discover');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
