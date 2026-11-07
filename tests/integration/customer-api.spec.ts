@@ -66,6 +66,11 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
+  await expect(page.getByRole('heading',{name:'Connect DigiLocker',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Connect DigiLocker (unavailable in demo)'})).toBeDisabled();
+  await expect(page.getByLabel('Add verification documents')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
+  await page.getByRole('button', { name: /^Digio/ }).click();
   await expect(
     page.getByRole('checkbox', { name: /I consent to OCR extraction/ }),
   ).toBeEnabled();
@@ -215,7 +220,7 @@ test('supplied cancelled-registration documents require review and revoked conse
   expect((await context.request.put(api + '/v1/me',{headers,data:profile})).status()).toBe(200);
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   await page.goto('/#/verification');
-  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  await page.getByRole('button',{name:/^Digio/}).click();
   // Provider selection persists asynchronously; wait before starting the next action.
   await expect(page.getByRole('checkbox',{name:/I consent to OCR extraction/})).toBeEnabled();
   await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K01_gst_certificate.png','case_source/kyc_documents/K01_address_proof.png','case_source/kyc_documents/K01_signatory_id.png']);
@@ -280,7 +285,7 @@ test('KYC completion 429 preserves login, resumes stored bytes and avoids accoun
   expect((await context.request.put(api+'/v1/me',{headers,data:profile})).status()).toBe(200);
   let profileReads=0;page.on('request',request=>{if(request.url()===api+'/v1/me' && request.method()==='GET') profileReads++;});
   await page.goto('/#/verification');
-  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  await page.getByRole('button',{name:/^Digio/}).click();
   const consent=page.getByRole('checkbox',{name:/I consent to OCR extraction/});await expect(consent).toBeEnabled();
   const before=profileReads;
   let throttle=true;

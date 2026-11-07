@@ -768,5 +768,10 @@
   "Your account connection is working.": "आपके खाते का कनेक्शन काम कर रहा है।",
   "Your business details will appear here after you sign in.": "साइन इन करने के बाद आपके व्यवसाय की जानकारी यहाँ दिखाई देगी।",
   "Sign in securely with Cognito to access your business account.": "अपने व्यवसाय खाते तक पहुँचने के लिए Cognito से सुरक्षित रूप से साइन इन करें।",
-  "Replace or remove the documents that need review before trying again.": "फिर से प्रयास करने से पहले समीक्षा की आवश्यकता वाले दस्तावेज़ बदलें या हटाएँ।"
+  "Replace or remove the documents that need review before trying again.": "फिर से प्रयास करने से पहले समीक्षा की आवश्यकता वाले दस्तावेज़ बदलें या हटाएँ।",
+  "Connect DigiLocker": "DigiLocker से कनेक्ट करें",
+  "Demo only — DigiLocker connection is not available yet.": "केवल डेमो — DigiLocker कनेक्शन अभी उपलब्ध नहीं है।",
+  "When connected, documents will be retrieved from DigiLocker with your consent. This demo cannot connect or retrieve documents yet.": "कनेक्ट होने पर आपकी सहमति से DigiLocker से दस्तावेज़ प्राप्त किए जाएँगे। यह डेमो अभी कनेक्ट नहीं हो सकता या दस्तावेज़ प्राप्त नहीं कर सकता।",
+  "Connect DigiLocker (unavailable in demo)": "DigiLocker से कनेक्ट करें (डेमो में उपलब्ध नहीं)",
+  "Choose Digio above to try the manual document-upload demo.": "दस्तावेज़ अपलोड का डेमो आज़माने के लिए ऊपर Digio चुनें।"
 }

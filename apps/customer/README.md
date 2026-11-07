@@ -155,3 +155,12 @@ backoff and limited concurrency; successful uploads update document state direct
 Interrupted upload completion can resume using the existing reservation and stored
 bytes. Unreadable or mismatched KYC documents still require review; errors do not
 fabricate verification. No live identity or payment gateway is connected.
+
+
+## Verification paths
+
+DigiLocker displays a disabled demo connection step: no document retrieval or live
+provider connection is implemented. Choose Digio for the manual document-upload
+prototype (local sample metadata or private backend uploads). A failed document
+assessment disables completion until the documents change; consent alone does not
+clear a review result. Neither path performs live government identity verification.

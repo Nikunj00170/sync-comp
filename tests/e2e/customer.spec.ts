@@ -16,7 +16,7 @@ test('discover → verify → order → tracking → billing survives reload', a
     .click();
   await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
-  await page.getByRole('button', { name: /^DigiLocker/ }).click();
+  await page.getByRole('button', { name: /^Digio/ }).click();
   await page.getByRole('button', { name: 'Use sample documents' }).click();
   await page.getByRole('checkbox', { name: /I consent to this simulated verification/ }).check();
   await page.getByRole('button', { name: 'Complete demo verification' }).click();
