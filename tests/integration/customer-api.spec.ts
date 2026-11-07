@@ -186,6 +186,8 @@ test('supplied cancelled-registration documents require review and revoked conse
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   await page.goto('/#/verification');
   await page.getByRole('button',{name:/^DigiLocker/}).click();
+  // Provider selection persists asynchronously; wait before starting the next action.
+  await expect(page.getByRole('checkbox',{name:/I consent to OCR extraction/})).toBeEnabled();
   await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K01_gst_certificate.png','case_source/kyc_documents/K01_address_proof.png','case_source/kyc_documents/K01_signatory_id.png']);
   await expect(page.getByText('K01_signatory_id.png',{exact:true})).toBeVisible();
   const consent = page.getByRole('checkbox',{name:/I consent to OCR extraction/});

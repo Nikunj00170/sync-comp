@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Read-only endpoint probes. Reads public endpoint configuration; prints no secret values."""
-import pathlib,urllib.request,urllib.error,json,ssl,datetime,os
+import pathlib,urllib.request,urllib.error,urllib.parse,json,ssl,datetime,os
 values={}
 for line in pathlib.Path('.env.local').read_text().splitlines():
  if '=' in line and not line.lstrip().startswith('#'):
   k,v=line.split('=',1);values[k.strip()]=v.strip().strip('"\'')
 ctx=ssl.create_default_context(cafile='/etc/ssl/cert.pem') if pathlib.Path('/etc/ssl/cert.pem').exists() else ssl.create_default_context()
 base=values['VITE_API_BASE_URL'].rstrip('/')
+frontend=urllib.parse.urlsplit(values['VITE_REDIRECT_URI'])
+frontend_origin=frontend.scheme+'://'+frontend.netloc
 urls={'apiHealth':base+'/health','apiCatalogue':base+'/v1/catalogue','apiUnauthenticatedProfile':base+'/v1/me','cognitoDiscovery':values['VITE_COGNITO_AUTHORITY'].rstrip('/')+'/.well-known/openid-configuration','cognitoJwks':values['VITE_COGNITO_AUTHORITY'].rstrip('/')+'/.well-known/jwks.json','frontend':values['VITE_REDIRECT_URI']}
 report={'checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':{}}
 for name,url in urls.items():
- req=urllib.request.Request(url,headers={'Origin':values['FRONTEND_ORIGIN']})
+ req=urllib.request.Request(url,headers={'Origin':frontend_origin})
  try:
   with urllib.request.urlopen(req,context=ctx,timeout=20) as response:
    body=response.read(2000000);status=response.status;headers=response.headers

@@ -41,6 +41,7 @@ const env = {
   ...process.env,
   SYNC_FRONTEND_AUTH_FILE: authFile,
   SPRING_PROFILES_ACTIVE: '',
+  SYNC_BACKEND_ENV_ENABLED: 'false',
   SYNC_STORAGE: 'memory',
   SYNC_DOCUMENTS: 'memory',
   SYNC_DEMO_ENABLED: 'true',

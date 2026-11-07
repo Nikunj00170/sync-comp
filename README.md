@@ -14,7 +14,7 @@ npm ci
 npm run dev
 ```
 
-The customer build reads ignored root `.env.local`; copy public configuration from [.env.example](.env.example). Provider secrets stay server-side. See [customer setup](apps/customer/README.md) for cloud login, callbacks, languages and Android; [backend setup](services/sync-backend/README.md) for exported Spring runtime variables. Spring does not auto-load dotenv files.
+The customer build reads ignored root `.env.local`; copy public configuration from [.env.example](.env.example). Provider secrets stay server-side. See [customer setup](apps/customer/README.md) for cloud login, callbacks, languages and Android; [backend setup](services/sync-backend/README.md) for `services/sync-backend/.env.local`, loaded automatically by Spring during local development. The root env file is reserved for frontend and Node AI-service settings.
 
 For GenAI, run `npm run dev:voice` alongside Vite. Set `VITE_CHAT_ENABLED=true` for typed advice and `VITE_VOICE_ENABLED=true` for optional voice. Gemini powers conversation; Sarvam powers speech. Consent precedes transmission. The local gateway is loopback-only; public hosting requires an authenticated/throttled gateway. Questionnaire discovery works without AI providers.
 
