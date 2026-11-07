@@ -18,7 +18,7 @@ import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { download } from '../lib/downloads';
-import { authManager, signIn, signOut } from '../lib/auth';
+import { signIn, signOut } from '../lib/auth';
 import { useAction } from '../lib/actions';
 export default function Account() {
   const { t, locale } = useI18n();
@@ -27,6 +27,7 @@ export default function Account() {
       setData,
       reset,
       cloud,
+      authenticated,
       connection: accountStatus,
       connectionError,
       refresh,
@@ -60,11 +61,6 @@ export default function Account() {
   async function checkConnection() {
     try {
       setBusy(true);
-      const user = await authManager().getUser();
-      if (!user || user.expired)
-        throw new Error(
-          'Sign in to your Cognito account first. The demo workspace remains available without sign-in.',
-        );
       setConnection('');
       await refresh();
     } catch (e) {
@@ -166,8 +162,9 @@ export default function Account() {
                   checked={profile.hasGstin}
                   onChange={(e) => setProfile((p) => ({ ...p, hasGstin: e.target.checked }))}
                 />{t("GST registered")}</label>
-              <fieldset className="form-field">
+              <fieldset className="business-priorities span-two">
                 <legend>{t("Business priorities")}</legend>
+                <div className="business-priority-options">
                 {['productivity', 'security', 'reliability', 'growth'].map((priority) => (
                   <label className="check-label" key={priority}>
                     <input
@@ -182,9 +179,10 @@ export default function Account() {
                         }))
                       }
                     />
-                    {t(priority)}
+                    <span>{t(priority)}</span>
                   </label>
                 ))}
+                </div>
               </fieldset>
               <label className="form-field span-two">{t("Business address")}<textarea
                   value={profile.address}
@@ -286,11 +284,13 @@ export default function Account() {
             </span>
             <h2>{t("Your live account")}</h2>
             <p className="muted">
-              {cloud
+              {authenticated
+                ? t("Your business profile and account settings are available here.")
+                : cloud
                 ? t("Sign in to load your customer records. Failed requests never fall back to demo data.")
                 : t("This build is using the local demo. Configure VITE_API_BASE_URL and Cognito to use your customer account.")}
             </p>
-            <button
+            {!authenticated && <button
               className="button secondary full"
               onClick={() =>
                 signIn().catch((e) => {
@@ -299,19 +299,17 @@ export default function Account() {
                 })
               }
             >
-              <LogIn size={16} />{t(" Sign in with Cognito")}</button>
-            <button className="text-button full center" disabled={busy} onClick={checkConnection}>
+              <LogIn size={16} />{t(" Sign in with Cognito")}</button>}
+            {authenticated && <button className="text-button full center" disabled={busy} onClick={checkConnection}>
               {busy ? t("Checking…") : t("Check account connection")} <ArrowRight size={15} />
-            </button>
-            <button
+            </button>}
+            {authenticated && <button
               className="text-button full center"
               onClick={() => signOut().catch((e) => notify(e.message))}
-            >{t("Sign out of live account")}</button>
-            {cloud && (
+            >{t("Sign out of live account")}</button>}
+            {cloud && accountStatus !== 'ready' && (
               <p className="connection-message" role="status">
-                {accountStatus === 'ready'
-                  ? t("Customer API connected.")
-                  : accountStatus === 'loading'
+                {accountStatus === 'loading'
                     ? t("Loading account…")
                     : accountStatus === 'error'
                       ? t(connectionError || 'Your workspace could not be loaded')

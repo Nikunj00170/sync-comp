@@ -24,7 +24,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/#/account');
-  await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Business name', { exact: true })).toBeVisible();
   await page.getByLabel('Business name', { exact: true }).fill('Balaji Realty LLP');
   await page.getByLabel('Your name', { exact: true }).fill('Cloud Customer');
   await page.getByLabel('Email address', { exact: true }).fill('contact@example.com');
@@ -45,7 +45,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
     await login(returning, info.project.name === 'desktop' ? 0 : 1);
     const account = await returning.newPage();
     await account.goto('http://127.0.0.1:5174/#/account');
-    await expect(account.getByText('Customer API connected.', { exact: true })).toBeVisible();
+    await expect(account.getByLabel('Business name', { exact: true })).toBeVisible();
     await expect(account.getByLabel('Business name', { exact: true })).toHaveValue('Balaji Realty LLP');
     await expect(account.getByLabel('City', { exact: true })).toHaveValue('Bengaluru');
   } finally {
@@ -63,7 +63,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
     .locator('.recommendation-card.featured')
     .getByRole('button', { name: 'Make this my bundle' })
     .click();
-  await expect(page.getByRole('button', { name: 'Place demo order' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
   await expect(
@@ -83,17 +83,36 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await page.getByRole('button', { name: 'Complete demo verification' }).click();
   await page.getByRole('link', { name: 'Back to your bundle' }).click();
   await page.getByRole('checkbox', { name: /I understand this is a demo order/ }).check();
-  await expect(page.getByRole('button', { name: 'Place demo order' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Place demo order' }).click();
+  await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Pay now (demo)' }).click();
+  await page.route(/\/v1\/invoices\?/,route=>route.fulfill({status:429,headers:{'Retry-After':'0'},json:{message:'Too Many Requests'}}));
+  await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
   await expect(page).toHaveURL(/#\/orders\/SYNC-/);
   const id = page.url().split('/').at(-1)!;
+  await expect(page.locator('.demo-payment-receipt').getByText('Demo payment recorded',{exact:true})).toBeVisible();
   await expect(page.getByRole('button', { name: 'Simulate next milestone' })).toBeHidden();
+  expect(await page.evaluate(()=>!!sessionStorage.getItem('oidc.user:https://issuer.test.example/pool:test-app-client'))).toBe(true);
+  await page.unroute(/\/v1\/invoices\?/);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Your connection journey' })).toBeVisible();
   await page.goto('/#/billing');
   await expect(page.locator('.invoice-id')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Try demo payment' })).toBeHidden();
-  await expect(page.getByRole('button', { name: /Demo pay/ })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Try demo payment' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Demo pay/ })).toBeVisible();
+  const apiInvoicesBefore = await (await context.request.get(api + '/v1/invoices',{headers:{Authorization:'Bearer '+user.access_token}})).json();
+  expect(apiInvoicesBefore[0].status).toBe('unpaid');
+  let paymentApiCalls = 0;
+  const countPayments = (request: import('@playwright/test').Request) => {if (request.method()==='POST') paymentApiCalls++;};
+  page.on('request',countPayments);
+  await page.getByRole('button',{name:'Try demo payment',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
+  await expect(page.getByText('Paid in demo',{exact:true})).toBeVisible();
+  expect(paymentApiCalls).toBe(0);
+  page.off('request',countPayments);
+  await page.reload();
+  await expect(page.getByText('Paid in demo',{exact:true})).toBeVisible();
+  const apiInvoicesAfter = await (await context.request.get(api + '/v1/invoices',{headers:{Authorization:'Bearer '+user.access_token}})).json();
+  expect(apiInvoicesAfter[0].status).toBe('unpaid');
   await page.goto('/#/support');
   await page.getByRole('button', { name: 'Create demo request' }).click();
   await page.getByLabel('Subject', { exact: true }).fill('Cloud support request');
@@ -174,7 +193,7 @@ test('Hindi controls preserve canonical API fields and cloud records', async ({ 
   const profile = { name: 'आन्या शर्मा', business: 'सुरक्षित व्यवसाय', email: 'cloud@example.com', industry: 'professional', city: 'पुणे', tier: 1, employees: 8, sites: 1, budget: 6000, hasGstin: true, priorities: ['productivity'], address: '२४, पुणे, महाराष्ट्र', phone: '' };
   expect((await context.request.put(api + '/v1/me', { headers: { Authorization: 'Bearer ' + user.access_token }, data: profile })).status()).toBe(200);
   await page.goto('/#/account');
-  await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Business name', { exact: true })).toBeVisible();
   await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('hi');
   await page.getByLabel('व्यवसाय का नाम', { exact: true }).fill('नया सुरक्षित व्यवसाय');
   await page.getByRole('combobox', { name: 'उद्योग', exact: true }).selectOption('retail');
@@ -211,4 +230,55 @@ test('supplied cancelled-registration documents require review and revoked conse
   await expect(consent).not.toBeChecked();
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   expect((await context.request.post(api + '/v1/registries/lookup',{headers,data:{kind:'gstin',identifier:'37IHKXV5167L1ZS'}})).status()).toBe(409);
+});
+
+
+test('live account actions follow Cognito session even when account API fails', async ({page, context, browser}, info) => {
+  await login(context, info.project.name === 'desktop' ? 12 : 13);
+  await page.goto('/#/account');
+  await expect(page.getByLabel('Business name', {exact:true})).toBeVisible();
+  const panel = page.locator('.account-connection');
+  await expect(panel.getByText('Customer API connected.', {exact:true})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Sign out of live account'})).toBeVisible();
+  await page.route('**/v1/me',route=>route.fulfill({status:503,json:{error:{message:'Account temporarily unavailable.'}}}));
+  await page.reload();
+  await expect(panel.getByText('Account temporarily unavailable.',{exact:true})).toBeVisible();
+  await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  const signedOut = await browser.newContext();
+  const signedOutPage = await signedOut.newPage();
+  await signedOutPage.goto('http://127.0.0.1:5174/#/account');
+  const signedOutPanel = signedOutPage.locator('.account-connection');
+  await expect(signedOutPanel.getByRole('button',{name:'Sign in with Cognito'})).toBeVisible();
+  await expect(signedOutPanel.getByRole('button',{name:'Sign out of live account'})).toHaveCount(0);
+  await signedOut.close();
+});
+
+
+test('KYC completion 429 preserves login, resumes stored bytes and avoids account-wide upload refreshes', async ({page, context}, info) => {
+  const user=await login(context,info.project.name==='desktop'?14:15);
+  const headers={Authorization:'Bearer '+user.access_token};
+  const profile={name:'Anita Shah',business:'Balaji Realty LLP',email:'kyc@example.com',industry:'professional',city:'Kochi',tier:2,employees:8,sites:1,budget:6000,hasGstin:true,priorities:['productivity'],address:'Shop/Unit 38, Civil Lines, Kochi, Kerala - 752083',phone:''};
+  expect((await context.request.put(api+'/v1/me',{headers,data:profile})).status()).toBe(200);
+  let profileReads=0;page.on('request',request=>{if(request.url()===api+'/v1/me' && request.method()==='GET') profileReads++;});
+  await page.goto('/#/verification');
+  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  const consent=page.getByRole('checkbox',{name:/I consent to OCR extraction/});await expect(consent).toBeEnabled();
+  const before=profileReads;
+  let throttle=true;
+  await page.route('**/v1/documents/*/complete',async route=>{
+    if(throttle){throttle=false;await route.fulfill({status:429,headers:{'Retry-After':'1'},json:{message:'Too Many Requests'}});}else await route.continue();
+  });
+  await page.getByLabel('Add verification documents').setInputFiles('case_source/kyc_documents/K05_gst_certificate.png');
+  await expect(page.getByRole('alert')).toContainText('Too many requests.');
+  expect(await page.evaluate(()=>!!sessionStorage.getItem('oidc.user:https://issuer.test.example/pool:test-app-client'))).toBe(true);
+  const retry=page.getByRole('button',{name:'Retry upload completion',exact:true});await expect(retry).toBeEnabled();await retry.click();
+  await expect(page.locator('.document-list').getByText('K05_gst_certificate.png',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Add verification documents')).toBeEnabled();
+  await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K05_address_proof.png','case_source/kyc_documents/K05_signatory_id.png']);
+  await expect(page.locator('.document-list').getByText('K05_signatory_id.png',{exact:true})).toBeVisible();await expect(consent).toBeEnabled();
+  expect(profileReads).toBe(before);
+  await consent.check();await page.getByRole('button',{name:'Complete demo verification'}).click();
+  await expect(page.getByRole('heading',{name:'You’re ready for your next step.'})).toBeVisible();
+  await page.goto('/#/account');await expect(page.locator('.account-connection').getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
 });

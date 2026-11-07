@@ -1,5 +1,7 @@
 import { money, useI18n } from '../lib/i18n';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Modal } from '../components/Modal';
+import {demoPaymentMethods, type DemoPaymentMethod} from '../lib/demoPayments';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -22,17 +24,27 @@ export default function Checkout() {
     navigate = useNavigate();
   const [accepted, setAccepted] = useState(false),
     [busy, setBusy] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [method, setMethod] = useState<DemoPaymentMethod>('UPI');
+  const [paymentError, setPaymentError] = useState('');
+  const placing = useRef(false);
   const { quote: q, error: quoteError, retry } = useQuote();
   async function place() {
-    if (busy) return;
+    if (placing.current) return;
     try {
       if (!accepted) throw new Error('Please confirm this is a demo order.');
+      placing.current = true;
       setBusy(true);
-      const order = await placeOrder();
+      setPaymentError('');
+      const order = await placeOrder(method);
       notify(t("Your demo order is saved. Let’s get you connected."));
       navigate('/orders/' + order.id);
     } catch (e) {
-      notify((e as Error).message);
+      const message = (e as Error).message;
+      notify(message);
+      setPaymentError(message);
+    } finally {
+      placing.current = false;
       setBusy(false);
     }
   }
@@ -217,14 +229,24 @@ export default function Checkout() {
               !data.profile.address.trim() ||
               busy
             }
-            onClick={place}
+            onClick={() => {setPaymentError('');setPaymentOpen(true);}}
           >
-            {busy ? t("Saving your order…") : t("Place demo order")} <ArrowRight size={17} />
+            {busy ? t("Saving your order…") : t("Pay now (demo)")} <ArrowRight size={17} />
           </button>
           <span className="secure-note">
             <ShieldCheck size={15} />{t(" Your next step, with everything clear.")}</span>
         </aside>
       </div>
+      {paymentOpen && <Modal title={t('Demo payment')} onClose={() => {if (!busy) setPaymentOpen(false);}}>
+        <p className="notice">{t('This is a payment simulation. No card, bank, or UPI details are needed. No money will be collected.')}</p>
+        <p className="muted small">{t('This demo receipt is saved only on this device and does not settle a real bill.')}</p>
+        <div className="payment-amount"><span>{data.profile.business}</span><strong>{money(q.total + q.setup)}</strong></div>
+        <div className="summary-lines"><span>{t('Monthly total')}<strong>{money(q.total)}</strong></span><span>{t('One-time setup, before demo tax')}<strong>{money(q.setup)}</strong></span></div>
+        <div className="payment-methods">{demoPaymentMethods.map(item => <button key={item} disabled={busy} aria-pressed={method === item} className={method === item ? 'selected' : ''} onClick={() => setMethod(item)}>{t(item)}</button>)}</div>
+        {paymentError && <p className="field-error" role="alert">{t(paymentError)}</p>}
+        <div className="button-row"><button className="button primary" disabled={busy} onClick={() => void place()}>{t(busy ? 'Saving your order…' : 'Simulate successful payment')}</button>
+        <button className="button secondary" disabled={busy} onClick={() => setPaymentError('Demo payment declined. Your cart is saved; choose another method or try again.')}>{t('Simulate declined payment')}</button></div>
+      </Modal>}
     </>
   );
 }

@@ -30,7 +30,7 @@ import { Modal } from '../components/Modal';
 import { downloadCalendar } from '../lib/downloads';
 export default function Orders() {
   const { t, locale } = useI18n();
-  const { data, setData, cloud, cancel: cancelRemote } = useWorkspace(),
+  const { data, setData, cloud, demoPayments, cancel: cancelRemote } = useWorkspace(),
     notify = useNotify();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -50,6 +50,7 @@ export default function Orders() {
     );
   if (order) {
     const current = orderSteps.indexOf(order.status);
+    const payment = demoPayments.find(item => item.orderId === order.id);
     return (
       <>
         <Link to="/orders" className="back-link">
@@ -172,6 +173,10 @@ export default function Orders() {
             </section>
           </div>
           <aside>
+            {payment && <section className="panel demo-payment-receipt">
+              <h2>{t('Demo payment recorded')}</h2><p>{t('No money was collected.')}</p>
+              <dl><dt>{t('Reference')}</dt><dd>{payment.reference}</dd><dt>{t('Payment method')}</dt><dd>{t(payment.method)}</dd><dt>{t('Demo amount')}</dt><dd>{money(payment.amount)}</dd><dt>{t('Business')}</dt><dd>{payment.business}</dd></dl>
+            </section>}
             <section className="panel appointment-card">
               <span className="stat-icon blue">
                 <CalendarDays size={25} />

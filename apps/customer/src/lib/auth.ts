@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { UserManager, WebStorageStateStore, type StateStore } from 'oidc-client-ts';
+import { UserManager, WebStorageStateStore, type StateStore, type User } from 'oidc-client-ts';
 let manager: UserManager | undefined;
 export function authManager() {
   const authority = import.meta.env.VITE_COGNITO_AUTHORITY;
@@ -16,7 +16,8 @@ export function authManager() {
       post_logout_redirect_uri: import.meta.env.VITE_LOGOUT_URI || location.origin + '/',
       response_type: 'code',
       scope: import.meta.env.VITE_OIDC_SCOPE || 'openid email',
-      automaticSilentRenew: true,
+      // All renewals go through the single-flight helper below, including timer events.
+      automaticSilentRenew: false,
       userStore: new WebStorageStateStore({ store: sessionStorage }) as StateStore,
     });
   return manager;
@@ -58,19 +59,59 @@ export async function signOut() {
   location.assign(url.toString());
 }
 
-/** Access tokens, never ID tokens, authenticate API operations. Refresh before expiry. */
-export async function accessToken() {
+class SessionExpiredError extends Error {}
+let renewing: Promise<User | null> | undefined;
+let renewalBackoff: { subject: string; until: number } | undefined;
+async function forgetExpiredSession(subject: string) {
+  const manager = authManager();
+  // A failed renewal from a previous account must never clear a newly signed-in account.
+  if ((await manager.getUser())?.profile.sub === subject) await manager.removeUser();
+}
+/** Refresh once for concurrent callers. Temporary provider errors never erase the session. */
+export async function accessToken(forceRefresh = false) {
   const manager = authManager();
   let user = await manager.getUser();
-  if (user && (user.expires_in ?? 0) < 60) {
+  if (!user) throw new Error('Please sign in to your customer account.');
+  const subject = user.profile.sub;
+  if (renewalBackoff?.subject === subject && renewalBackoff.until > Date.now()) {
+    if (!user.expired && !forceRefresh && user.access_token) return user.access_token;
+    throw new Error('Account renewal is temporarily unavailable. Please try again shortly.');
+  }
+  if ((forceRefresh || (user.expires_in ?? 0) < 60) && user.refresh_token) {
+    renewing ??= manager
+      .signinSilent()
+      .catch(async (error: unknown) => {
+        const code = (error as { error?: string })?.error;
+        if (code && ['invalid_grant', 'login_required', 'interaction_required'].includes(code)) {
+          await forgetExpiredSession(subject);
+          throw new SessionExpiredError('Your session expired. Please sign in again.');
+        }
+        renewalBackoff = { subject, until: Date.now() + 15_000 };
+        throw new Error('Account renewal is temporarily unavailable. Please try again shortly.');
+      })
+      .finally(() => {
+        renewing = undefined;
+      });
     try {
-      user = await manager.signinSilent();
-    } catch {
-      await manager.removeUser();
-      throw new Error('Your session expired. Please sign in again.');
+      user = await renewing;
+      renewalBackoff = undefined;
+    } catch (error) {
+      if (
+        !(error instanceof SessionExpiredError) &&
+        !forceRefresh &&
+        user &&
+        !user.expired &&
+        user.access_token
+      )
+        return user.access_token;
+      throw error;
     }
   }
-  if (!user || user.expired || !user.access_token)
-    throw new Error('Please sign in to your customer account.');
+  if (!user || user.expired || !user.access_token) {
+    await forgetExpiredSession(subject);
+    throw new SessionExpiredError('Your session expired. Please sign in again.');
+  }
+  if (user.profile.sub !== subject || (await manager.getUser())?.profile.sub !== subject)
+    throw new Error('Your account changed. Please try again.');
   return user.access_token;
 }

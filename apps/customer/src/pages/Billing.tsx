@@ -14,20 +14,25 @@ import {
 import { makeId, productById, type Invoice } from '@sync/domain';
 import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
+import { type DemoPaymentMethod } from '../lib/demoPayments';
 import { Modal } from '../components/Modal';
 import { downloadInvoice, downloadStatement } from '../lib/downloads';
 export default function Billing() {
   const { t, locale } = useI18n();
-  const { data, setData, cloud } = useWorkspace(),
+  const { data, setData, cloud, demoPayments, payInvoice } = useWorkspace(),
     notify = useNotify();
   const [filter, setFilter] = useState('all'),
     [pay, setPay] = useState<Invoice | null>(null),
     [detail, setDetail] = useState<Invoice | null>(null),
-    [method, setMethod] = useState('UPI'),
+    [method, setMethod] = useState<DemoPaymentMethod>('UPI'),
     [busy, setBusy] = useState(false);
-  const due = data.invoices.filter((i) => i.status === 'unpaid').reduce((s, i) => s + i.total, 0);
-  const latest = data.invoices[0];
-  const shown = data.invoices.filter((i) => filter === 'all' || i.status === filter);
+  const displayInvoices = data.invoices.map(invoice => {
+    const simulated = demoPayments.find(item => item.invoiceId === invoice.id);
+    return simulated ? {...invoice,status:'paid' as const,paymentReference:simulated.reference} : invoice;
+  });
+  const due = displayInvoices.filter((i) => i.status === 'unpaid').reduce((s, i) => s + i.total, 0);
+  const latest = displayInvoices[0];
+  const shown = displayInvoices.filter((i) => filter === 'all' || i.status === filter);
   async function pdf(i: Invoice) {
     try {
       setBusy(true);
@@ -56,6 +61,7 @@ export default function Billing() {
     .join(',');
   function payDemo() {
     if (!pay) return;
+    if (cloud) {payInvoice(pay.id,method);setPay(null);notify(t("Demo payment recorded. No real payment was collected."));return;}
     const reference = makeId('DEMO-PAY');
     setData((d) => ({
       ...d,
@@ -106,10 +112,10 @@ export default function Billing() {
               : t("All caught up. That’s one less thing on your list.")}
           </span>
           <div className="button-row">
-            {!cloud && due > 0 && (
+            {due > 0 && (
               <button
                 className="button white"
-                onClick={() => setPay(data.invoices.find((i) => i.status === 'unpaid')!)}
+                onClick={() => setPay(displayInvoices.find((i) => i.status === 'unpaid')!)}
               >{t("Try demo payment ")}<ArrowRight size={17} />
               </button>
             )}
@@ -203,7 +209,7 @@ export default function Billing() {
                       >
                         <ArrowDownToLine size={19} />
                       </button>
-                      {!cloud && i.status === 'unpaid' && (
+                      {i.status === 'unpaid' && (
                         <button className="text-button" onClick={() => setPay(i)}>{t("Demo pay ")}<ArrowRight size={14} />
                         </button>
                       )}
@@ -278,7 +284,7 @@ export default function Billing() {
             <strong>{money(pay.total)}</strong>
           </div>
           <div className="payment-methods">
-            {['UPI', 'Card', 'Net banking'].map((m) => (
+            {(['UPI', 'Card', 'Net banking'] as const).map((m) => (
               <button
                 className={method === m ? 'selected' : ''}
                 aria-pressed={method === m}
@@ -301,6 +307,7 @@ export default function Billing() {
             <LockKeyhole size={19} />
             <span>{t("This is a payment simulation. No card, bank, or UPI details are needed. No money will be collected.")}</span>
           </div>
+          <p className="muted small">{t('This demo receipt is saved only on this device and does not settle a real bill.')}</p>
           <button className="button primary full" onClick={payDemo}>{t("Simulate successful payment ")}<ArrowRight size={17} />
           </button>
         </Modal>

@@ -28,7 +28,7 @@ flowchart LR
 2. Questionnaire and optional typed/voice GenAI discover business needs, existing tools, budget, size and sites. GenAI proposes only catalogue IDs and confirmed quantities; the server computes the checkout quote. Optional add-ons are ordinary editable cart lines with dependency/eligibility checks. Monthly recurring amount, illustrative tax, setup charges, contract and expected installation are shown separately.
 3. Private upload authorization reserves an owned key and enforces quotas. Completion verifies bytes/metadata; changes revoke KYC consent and approval. Explicit consent permits OCR and synthetic registry checks. Reports mask identifiers and explain review issues. Cached OCR recognizes only supplied specimen bytes. Textract is a selectable adapter, not a verified live connection.
 4. Demo verification requires passing document checks and an explicit server demo gate. Checkout transactionally creates an order, invoice snapshot, notice and idempotency record. Orders expose their status/timeline. There is no production provisioning or payment provider.
-5. Tickets, resolution and read notices persist under the authenticated subject. Unsupported live service changes, payments, appointment mutation and manual milestone simulation stay disabled in API mode.
+5. Tickets, resolution and read notices persist under the authenticated subject. Live service changes, real payments, appointment mutation and manual milestone simulation stay disabled in API mode. Browser-only demo payments store account-scoped mock receipts; they never call a payment API or alter server invoice payment status.
 
 ## Boundaries and deployment
 

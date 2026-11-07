@@ -7,6 +7,7 @@ beforeEach(() => {
   fetcher.mockReset();
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
@@ -90,4 +91,32 @@ describe('customer API boundary', () => {
       ),
     ).rejects.toThrow('unexpected document upload destination');
   });
+});
+
+it('rate-limited reads back off and recover, while POST reservations are never replayed', async () => {
+  vi.useFakeTimers();
+  fetcher
+    .mockResolvedValueOnce(
+      new Response('{"message":"Too Many Requests"}', {
+        status: 429,
+        headers: { 'Retry-After': '1' },
+      }),
+    )
+    .mockResolvedValueOnce(new Response('{"status":"pending","documents":[]}'));
+  const { customerApi } = await import('../apps/customer/src/lib/api');
+  const read = customerApi.kyc('token');
+  await vi.runAllTimersAsync();
+  expect(await read).toMatchObject({ status: 'pending' });
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  fetcher.mockReset();
+  fetcher.mockResolvedValueOnce(
+    new Response('{"message":"Too Many Requests"}', {
+      status: 429,
+      headers: { 'Retry-After': '10' },
+    }),
+  );
+  await expect(
+    customerApi.upload('token', { name: 'document.png', type: 'image/png', size: 4 }),
+  ).rejects.toMatchObject({ status: 429, retryAfterSeconds: 10 });
+  expect(fetcher).toHaveBeenCalledTimes(1);
 });

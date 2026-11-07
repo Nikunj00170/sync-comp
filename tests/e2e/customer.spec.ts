@@ -14,7 +14,7 @@ test('discover → verify → order → tracking → billing survives reload', a
     .locator('.recommendation-card.featured')
     .getByRole('button', { name: 'Make this my bundle' })
     .click();
-  await expect(page.getByRole('button', { name: 'Place demo order' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
   await page.getByRole('button', { name: 'Use sample documents' }).click();
@@ -22,7 +22,8 @@ test('discover → verify → order → tracking → billing survives reload', a
   await page.getByRole('button', { name: 'Complete demo verification' }).click();
   await page.getByRole('link', { name: 'Back to your bundle' }).click();
   await page.getByRole('checkbox', { name: /I understand this is a demo order/ }).check();
-  await page.getByRole('button', { name: 'Place demo order' }).click();
+  await page.getByRole('button', { name: 'Pay now (demo)' }).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Your connection journey' })).toBeVisible();
   const orderUrl = page.url();
   await page.getByRole('button', { name: 'Simulate next milestone' }).click();
