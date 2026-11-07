@@ -1,0 +1,146 @@
+name: Deploy AWS prototype
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-aws-prototype
+  cancel-in-progress: false
+
+jobs:
+  build-web:
+    if: github.ref == 'refs/heads/main' && vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_COGNITO_AUTHORITY: ${{ vars.VITE_COGNITO_AUTHORITY }}
+      VITE_COGNITO_CLIENT_ID: ${{ vars.VITE_COGNITO_CLIENT_ID }}
+      VITE_COGNITO_DOMAIN: ${{ vars.VITE_COGNITO_DOMAIN }}
+      VITE_REDIRECT_URI: ${{ vars.VITE_REDIRECT_URI }}
+      VITE_LOGOUT_URI: ${{ vars.VITE_LOGOUT_URI }}
+      VITE_OIDC_SCOPE: openid email
+      VITE_VOICE_ENABLED: ${{ vars.VITE_VOICE_ENABLED || 'false' }}
+      VITE_CHAT_ENABLED: ${{ vars.VITE_CHAT_ENABLED || 'false' }}
+      VITE_VOICE_API_BASE_URL: ${{ vars.VITE_VOICE_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+      - name: Validate website configuration
+        shell: bash
+        run: |
+          for name in VITE_API_BASE_URL VITE_COGNITO_AUTHORITY VITE_COGNITO_CLIENT_ID VITE_COGNITO_DOMAIN VITE_REDIRECT_URI VITE_LOGOUT_URI; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing repository variable $name"
+              exit 1
+            fi
+          done
+          if [[ "$VITE_VOICE_ENABLED" == true || "$VITE_CHAT_ENABLED" == true ]]; then
+            if [[ "$VITE_VOICE_API_BASE_URL" != https://* ]]; then
+              echo "::error::Hosted advisor requires an HTTPS VITE_VOICE_API_BASE_URL."
+              exit 1
+            fi
+          fi
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: customer-web
+          path: apps/customer/dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build-web
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      ECR_REPOSITORY: ${{ vars.AWS_ECR_REPOSITORY }}
+      BACKEND_FUNCTION: ${{ vars.AWS_BACKEND_FUNCTION }}
+      WEB_BUCKET: ${{ vars.AWS_WEB_BUCKET }}
+      DISTRIBUTION_ID: ${{ vars.AWS_CLOUDFRONT_DISTRIBUTION_ID }}
+      API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: customer-web
+          path: customer-web
+      - name: Check deployment configuration and branch tip
+        shell: bash
+        run: |
+          for name in AWS_REGION AWS_ACCOUNT_ID ECR_REPOSITORY BACKEND_FUNCTION WEB_BUCKET DISTRIBUTION_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing deployment configuration for $name"
+              exit 1
+            fi
+          done
+          latest_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$latest_sha" != "$GITHUB_SHA" ]]; then
+            echo "::notice::A newer main revision exists. Deploy that revision instead."
+            exit 1
+          fi
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Publish backend only when its image inputs change
+        shell: bash
+        run: |
+          build_hash="$(git ls-tree HEAD -- .dockerignore services/sync-backend shared/data | git hash-object --stdin)"
+          tag="deploy-$build_hash"
+          registry="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          image="$registry/$ECR_REPOSITORY:$tag"
+          current_image="$(aws lambda get-function --function-name "$BACKEND_FUNCTION" --query Code.ImageUri --output text)"
+          if [[ "$current_image" == "$image" ]]; then
+            echo "Lambda already uses this backend image."
+            exit 0
+          fi
+
+          if image_info="$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids "imageTag=$tag" 2>&1)"; then
+            echo "Reusing the existing ECR image for these inputs."
+          elif [[ "$image_info" == *ImageNotFoundException* ]]; then
+            aws ecr get-login-password | docker login --username AWS --password-stdin "$registry"
+            docker buildx build --platform linux/arm64 --provenance=false --sbom=false --push \
+              --file services/sync-backend/Dockerfile.lambda --tag "$image" .
+          else
+            echo "$image_info" >&2
+            exit 1
+          fi
+
+          aws lambda update-function-code --function-name "$BACKEND_FUNCTION" --image-uri "$image" \
+            --query LastUpdateStatus --output text
+          aws lambda wait function-updated-v2 --function-name "$BACKEND_FUNCTION"
+      - name: Verify hosted backend
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --retry 2 --max-time 35 "${API_BASE_URL%/}/health" \
+            | jq -e '.status == "UP" and .service == "sync-backend"'
+      - name: Publish website and refresh CloudFront
+        shell: bash
+        run: |
+          aws s3 sync customer-web/ "s3://$WEB_BUCKET/" --exclude index.html --only-show-errors
+          aws s3 cp customer-web/index.html "s3://$WEB_BUCKET/index.html" \
+            --content-type text/html --cache-control 'max-age=0, must-revalidate' --only-show-errors
+          invalidation_id="$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" \
+            --paths '/*' --query Invalidation.Id --output text)"
+          aws cloudfront wait invalidation-completed --distribution-id "$DISTRIBUTION_ID" --id "$invalidation_id"
