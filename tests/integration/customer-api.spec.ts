@@ -260,6 +260,8 @@ test('live account actions follow Cognito session even when account API fails', 
   const signedOutPanel = signedOutPage.locator('.account-connection');
   await expect(signedOutPanel.getByRole('button',{name:'Sign in with Cognito'})).toBeVisible();
   await expect(signedOutPanel.getByRole('button',{name:'Sign out of live account'})).toHaveCount(0);
+  await expect(signedOutPanel.locator('.connection-message')).toHaveCount(0);
+  await expect(signedOutPage.getByRole('heading',{name:'Sign in to load your account.'})).toBeVisible();
   await signedOut.close();
 });
 

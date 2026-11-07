@@ -765,5 +765,7 @@
   "Too many requests. Please wait a moment and try again.": "बहुत अधिक अनुरोध हैं। कुछ देर प्रतीक्षा करके फिर प्रयास करें।",
   "Account renewal is temporarily unavailable. Please try again shortly.": "खाते का नवीनीकरण अभी उपलब्ध नहीं है। कुछ देर बाद फिर प्रयास करें।",
   "This demo receipt is saved only on this device and does not settle a real bill.": "यह डेमो रसीद केवल इस डिवाइस पर सहेजी जाती है और किसी वास्तविक बिल का भुगतान नहीं करती।",
-  "Your account connection is working.": "आपके खाते का कनेक्शन काम कर रहा है।"
+  "Your account connection is working.": "आपके खाते का कनेक्शन काम कर रहा है।",
+  "Your business details will appear here after you sign in.": "साइन इन करने के बाद आपके व्यवसाय की जानकारी यहाँ दिखाई देगी।",
+  "Sign in securely with Cognito to access your business account.": "अपने व्यवसाय खाते तक पहुँचने के लिए Cognito से सुरक्षित रूप से साइन इन करें।"
 }
