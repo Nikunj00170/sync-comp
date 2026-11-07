@@ -12,6 +12,7 @@ import {
   initialWorkspace,
   profileSchema,
   makeOrder,
+  makeInvoice,
   cancelOrder,
   makeId,
   type Workspace,
@@ -30,6 +31,7 @@ import {
   type DocumentReservation,
 } from './api';
 import { authManager, accessToken } from './auth';
+import {demoPaymentMethods, readDemoPayments, writeDemoPayments, type DemoPayment, type DemoPaymentMethod} from './demoPayments';
 const KEY = 'airtel-sync:customer:v1';
 export type Connection = 'demo' | 'signed-out' | 'loading' | 'ready' | 'error';
 type Store = {
@@ -44,7 +46,9 @@ type Store = {
   refresh: () => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   matches: () => Promise<Recommendation[]>;
-  placeOrder: () => Promise<Order>;
+  placeOrder: (method: DemoPaymentMethod) => Promise<Order>;
+  demoPayments: DemoPayment[];
+  payInvoice: (id: string, method: DemoPaymentMethod) => void;
   cancel: (id: string) => Promise<void>;
   saveKyc: (provider: Kyc['provider'], consent: boolean) => Promise<void>;
   verify: () => Promise<void>;
@@ -131,6 +135,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const epoch = useRef(0);
   const owner = useRef('');
   const loadId = useRef(0);
+  const [paymentState, setPaymentState] = useState<{owner: string; items: DemoPayment[]}>(() => cloud ? {owner:'', items:[]} : {owner:'local-demo',items:readDemoPayments('local-demo')});
+  const addPayment = (payment: DemoPayment) => {
+    const scope = cloud ? owner.current : 'local-demo';
+    if (!scope) throw new Error('Please sign in to your customer account.');
+    setPaymentState(previous => {
+      const items = previous.owner === scope ? previous.items : readDemoPayments(scope);
+      const next = [...items.filter(item => !(payment.orderId && item.orderId === payment.orderId) && !(payment.invoiceId && item.invoiceId === payment.invoiceId)), payment];
+      try {writeDemoPayments(scope, next);} catch {storageFailed(true);}
+      return {owner:scope,items:next};
+    });
+  };
   const [authenticated, setAuthenticated] = useState(false);
   const [storageError, storageFailed] = useState(false);
   const [connection, connect] = useState<Connection>(cloud ? 'loading' : 'demo');
@@ -201,6 +216,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (owner.current !== user.profile.sub) {
           epoch.current++;
           owner.current = user.profile.sub;
+          setPaymentState({owner:user.profile.sub,items:readDemoPayments(user.profile.sub)});
           update(emptyWorkspace());
           setReservations([]);
         }
@@ -211,6 +227,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         epoch.current++;
         owner.current = '';
+        setPaymentState({owner:'',items:[]});
         setAuthenticated(false);
         update(emptyWorkspace());
         setReservations([]);
@@ -355,7 +372,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         },
       }));
   };
-  const placeOrder = async () => {
+  const payInvoice = (id: string, method: DemoPaymentMethod) => {
+    if (!demoPaymentMethods.includes(method)) throw new Error('Choose a demo payment method.');
+    const invoice = current.current.invoices.find(item => item.id === id);
+    if (!invoice) throw new Error('Invoice not found.');
+    addPayment({reference:makeId('DEMO-PAY'),invoiceId:id,method,amount:invoice.total,business:invoice.billedTo?.business || current.current.profile.business,address:invoice.billedTo?.address || current.current.profile.address,createdAt:new Date().toISOString()});
+  };
+  const placeOrder = async (method: DemoPaymentMethod) => {
+    if (!demoPaymentMethods.includes(method)) throw new Error('Choose a demo payment method.');
     const workspace = current.current;
     let order: Order;
     if (cloud) {
@@ -372,10 +396,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       order = await call((token) => customerApi.createOrder(token, workspace.cart, key));
       sessionStorage.removeItem(keyName);
     } else order = makeOrder(workspace.cart, workspace.profile, workspace.kyc);
+    const receipt: DemoPayment = {reference:makeId('DEMO-PAY'),orderId:order.id,method,amount:order.quote.total + order.quote.setup,business:workspace.profile.business,address:order.address,createdAt:new Date().toISOString()};
+    const invoice = cloud ? undefined : {...makeInvoice(order.lines, workspace.profile, new Date().toLocaleDateString('en-IN', {month:'long',year:'numeric'})), status:'paid' as const, paymentReference:receipt.reference};
+    if (invoice) receipt.invoiceId = invoice.id;
+    addPayment(receipt);
     update((prev) => ({
       ...prev,
       cart: [],
       orders: [order, ...prev.orders.filter((x) => x.id !== order.id)],
+      invoices: invoice ? [invoice,...prev.invoices] : prev.invoices,
+      notifications: cloud ? prev.notifications : [{id:makeId('NOTICE'),title:'Demo order placed',text:order.name + ' is ready to track. No money was collected.',route:'/orders/'+order.id,read:false,createdAt:order.createdAt},...prev.notifications],
     }));
     if (cloud) await refresh();
     return order;
@@ -422,7 +452,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         data,
         setData,
         reset: () => {
-          if (!cloud) update(initialWorkspace());
+          if (!cloud) {update(initialWorkspace());setPaymentState({owner:'local-demo',items:[]});writeDemoPayments('local-demo',[]);}
         },
         storageError,
         cloud,
@@ -433,6 +463,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         saveProfile,
         matches: () => call(customerApi.recommendations),
         placeOrder,
+        demoPayments: paymentState.items,
+        payInvoice,
         cancel,
         saveKyc,
         verify,

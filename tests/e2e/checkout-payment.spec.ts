@@ -1,0 +1,30 @@
+import {test, expect} from '@playwright/test';
+test('demo payment can decline, retry and create one tracked order and invoice without a payment API', async ({page}, info) => {
+  await page.goto('/');
+  await expect.poll(()=>page.evaluate(()=>!!localStorage.getItem('airtel-sync:customer:v1'))).toBe(true);
+  await page.evaluate(()=>{
+    const seed=JSON.parse(localStorage.getItem('airtel-sync:customer:v1')!);
+    seed.cart=[{productId:'P01',quantity:1}];seed.orders=[];seed.invoices=[];seed.notifications=[];
+    seed.kyc={status:'demo_verified',provider:'digio',consent:true,documents:[],verifiedAt:new Date().toISOString()};
+    localStorage.setItem('airtel-sync:customer:v1',JSON.stringify(seed));
+  });
+  const posts:string[]=[];page.on('request',request=>{if(request.method()==='POST') posts.push(request.url());});
+  await page.goto('/#/checkout');
+  await page.reload();
+  await page.getByRole('checkbox',{name:/I understand this is a demo order/}).check();
+  await page.getByRole('button',{name:'Pay now (demo)'}).click();
+  const dialog=page.getByRole('dialog');await expect(dialog.getByText(/No card, bank, or UPI details/)).toBeVisible();
+  await dialog.getByRole('button',{name:'Simulate declined payment'}).click();
+  await expect(dialog.getByRole('alert')).toHaveText(/Demo payment declined/);
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('airtel-sync:customer:v1')!).orders.length)).toBe(0);
+  await dialog.getByRole('button',{name:'Card',exact:true}).click();
+  await page.screenshot({path:`test-results/demo-checkout-${info.project.name}.png`});
+  await dialog.getByRole('button',{name:'Simulate successful payment',exact:true}).click();
+  await expect(page).toHaveURL(/#\/orders\/SYNC-/);
+  const receipt=page.locator('.demo-payment-receipt');await expect(receipt.getByText('Card',{exact:true})).toBeVisible();
+  const reference=await receipt.locator('dd').first().innerText();expect(reference).toMatch(/^DEMO-PAY-/);
+  await page.reload();await expect(receipt.getByText(reference,{exact:true})).toBeVisible();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('airtel-sync:customer:v1')!));
+  expect(saved.orders).toHaveLength(1);expect(saved.invoices).toHaveLength(1);expect(saved.invoices[0].status).toBe('paid');expect(saved.invoices[0].paymentReference).toBe(reference);
+  expect(posts).toEqual([]);
+});

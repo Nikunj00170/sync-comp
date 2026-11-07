@@ -630,7 +630,7 @@
   "Demo verification complete": "डेमो पडताळणी पूर्ण",
   "Demo slot changed": "डेमो वेळ बदलली",
   "Demo subscription updated": "डेमो सदस्यत्व बदलले",
-  "Demo payment recorded": "डेमो भरणा नोंदवला",
+  "Demo payment recorded": "डेमो पेमेंट नोंदवले",
   "A clearer look at your bill": "तुमच्या बिलाचा स्पष्ट तपशील",
   "A plan should fit your business. Not the other way around.": "योजना तुमच्या व्यवसायानुसार असावी.",
   "BUILT AROUND YOU": "तुमच्यानुसार बनवलेले",
@@ -748,5 +748,15 @@
   "Clear conversation": "संभाषण साफ करा",
   "Advisor unavailable. Try the questionnaire.": "सल्लागार उपलब्ध नाही. प्रश्नावली वापरा.",
   "Your business profile and account settings are available here.": "तुमची व्यवसाय प्रोफाइल आणि खाते सेटिंग येथे उपलब्ध आहेत.",
-  "Open business profile": "व्यवसाय प्रोफाइल उघडा"
+  "Open business profile": "व्यवसाय प्रोफाइल उघडा",
+  "Pay now (demo)": "आता पैसे द्या (डेमो)",
+  "Demo payment": "डेमो पेमेंट",
+  "Simulate declined payment": "नाकारलेले पेमेंट दाखवा",
+  "Demo payment declined. Your cart is saved; choose another method or try again.": "डेमो पेमेंट नाकारले. तुमचा कार्ट जतन आहे; दुसरी पद्धत निवडा किंवा पुन्हा प्रयत्न करा.",
+  "No money was collected.": "कोणतेही पैसे घेतलेले नाहीत.",
+  "Payment method": "पेमेंट पद्धत",
+  "Demo amount": "डेमो रक्कम",
+  "UPI": "UPI",
+  "Card": "कार्ड",
+  "Net banking": "नेट बँकिंग"
 }

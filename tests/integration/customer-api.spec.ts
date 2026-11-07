@@ -45,7 +45,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
     await login(returning, info.project.name === 'desktop' ? 0 : 1);
     const account = await returning.newPage();
     await account.goto('http://127.0.0.1:5174/#/account');
-    await expect(account.getByText('Customer API connected.', { exact: true })).toBeVisible();
+    await expect(account.getByLabel('Business name', { exact: true })).toBeVisible();
     await expect(account.getByLabel('Business name', { exact: true })).toHaveValue('Balaji Realty LLP');
     await expect(account.getByLabel('City', { exact: true })).toHaveValue('Bengaluru');
   } finally {
@@ -63,7 +63,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
     .locator('.recommendation-card.featured')
     .getByRole('button', { name: 'Make this my bundle' })
     .click();
-  await expect(page.getByRole('button', { name: 'Place demo order' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
   await expect(
@@ -83,17 +83,33 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await page.getByRole('button', { name: 'Complete demo verification' }).click();
   await page.getByRole('link', { name: 'Back to your bundle' }).click();
   await page.getByRole('checkbox', { name: /I understand this is a demo order/ }).check();
-  await expect(page.getByRole('button', { name: 'Place demo order' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Place demo order' }).click();
+  await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Pay now (demo)' }).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
   await expect(page).toHaveURL(/#\/orders\/SYNC-/);
   const id = page.url().split('/').at(-1)!;
+  await expect(page.locator('.demo-payment-receipt').getByText('Demo payment recorded',{exact:true})).toBeVisible();
   await expect(page.getByRole('button', { name: 'Simulate next milestone' })).toBeHidden();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Your connection journey' })).toBeVisible();
   await page.goto('/#/billing');
   await expect(page.locator('.invoice-id')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Try demo payment' })).toBeHidden();
-  await expect(page.getByRole('button', { name: /Demo pay/ })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Try demo payment' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Demo pay/ })).toBeVisible();
+  const apiInvoicesBefore = await (await context.request.get(api + '/v1/invoices',{headers:{Authorization:'Bearer '+user.access_token}})).json();
+  expect(apiInvoicesBefore[0].status).toBe('unpaid');
+  let paymentApiCalls = 0;
+  const countPayments = (request: import('@playwright/test').Request) => {if (request.method()==='POST') paymentApiCalls++;};
+  page.on('request',countPayments);
+  await page.getByRole('button',{name:'Try demo payment',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
+  await expect(page.getByText('Paid in demo',{exact:true})).toBeVisible();
+  expect(paymentApiCalls).toBe(0);
+  page.off('request',countPayments);
+  await page.reload();
+  await expect(page.getByText('Paid in demo',{exact:true})).toBeVisible();
+  const apiInvoicesAfter = await (await context.request.get(api + '/v1/invoices',{headers:{Authorization:'Bearer '+user.access_token}})).json();
+  expect(apiInvoicesAfter[0].status).toBe('unpaid');
   await page.goto('/#/support');
   await page.getByRole('button', { name: 'Create demo request' }).click();
   await page.getByLabel('Subject', { exact: true }).fill('Cloud support request');

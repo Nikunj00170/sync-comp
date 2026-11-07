@@ -748,5 +748,15 @@
   "Clear conversation": "बातचीत मिटाएँ",
   "Advisor unavailable. Try the questionnaire.": "सलाहकार उपलब्ध नहीं है। प्रश्नावली आज़माएँ।",
   "Your business profile and account settings are available here.": "आपकी व्यावसायिक प्रोफ़ाइल और खाते की सेटिंग यहाँ उपलब्ध हैं।",
-  "Open business profile": "व्यावसायिक प्रोफ़ाइल खोलें"
+  "Open business profile": "व्यावसायिक प्रोफ़ाइल खोलें",
+  "Pay now (demo)": "अभी भुगतान करें (डेमो)",
+  "Demo payment": "डेमो भुगतान",
+  "Simulate declined payment": "अस्वीकृत भुगतान का अनुकरण करें",
+  "Demo payment declined. Your cart is saved; choose another method or try again.": "डेमो भुगतान अस्वीकृत हुआ। आपका कार्ट सुरक्षित है; दूसरा तरीका चुनें या फिर कोशिश करें।",
+  "No money was collected.": "कोई पैसा नहीं लिया गया।",
+  "Payment method": "भुगतान का तरीका",
+  "Demo amount": "डेमो राशि",
+  "UPI": "UPI",
+  "Card": "कार्ड",
+  "Net banking": "नेट बैंकिंग"
 }
