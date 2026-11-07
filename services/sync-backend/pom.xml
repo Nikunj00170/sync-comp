@@ -30,6 +30,7 @@
         </dependencies>
     </dependencyManagement>
 	<dependencies>
+        <dependency><groupId>software.amazon.awssdk</groupId><artifactId>textract</artifactId></dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb</artifactId>
@@ -124,6 +125,9 @@
 				<directory>${project.basedir}/../../shared/data</directory>
 				<includes>
 					<include>catalogue.json</include>
+                                    <include>mock_gstin_registry.json</include>
+                                    <include>mock_udyam_registry.json</include>
+                                    <include>kyc-ocr-fixtures.json</include>
 				</includes>
 				<targetPath>${project.build.outputDirectory}</targetPath>
 			</resource>
@@ -151,6 +155,9 @@
 									<directory>${project.basedir}/../../shared/data</directory>
 									<includes>
 										<include>catalogue.json</include>
+                                    <include>mock_gstin_registry.json</include>
+                                    <include>mock_udyam_registry.json</include>
+                                    <include>kyc-ocr-fixtures.json</include>
 									</includes>
 								</resource>
 							</resources>

@@ -3,6 +3,7 @@ package com.airtelsync.backend.application;
 public interface DocumentStorage {
     record Upload(String url, java.util.Map<String, String> headers) {}
     Upload authorize(String subject, String id, String key, String type, long size);
+    byte[] read(String key);
     void delete(String key);
     void verify(String key, String type, long size);
     default void putLocal(String key, String type, byte[] content) {

@@ -2,7 +2,7 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 COPY services/sync-backend services/sync-backend
-COPY shared/data/catalogue.json shared/data/catalogue.json
+COPY shared/data/catalogue.json shared/data/mock_gstin_registry.json shared/data/mock_udyam_registry.json shared/data/kyc-ocr-fixtures.json shared/data/
 WORKDIR /workspace/services/sync-backend
 RUN chmod +x mvnw && ./mvnw --batch-mode -DskipTests package
 
@@ -15,6 +15,7 @@ ENV SPRING_PROFILES_ACTIVE=aws \
     SERVER_PORT=8080 \
     AWS_LWA_PORT=8080 \
     AWS_LWA_READINESS_CHECK_PATH=/health \
+    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 \
     AWS_LWA_ASYNC_INIT=true \
     JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=/tmp"
 USER 10001:10001

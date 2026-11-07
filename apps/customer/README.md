@@ -1,69 +1,139 @@
 # Accel Telecom customer app
 
-A working customer prototype for the web and Capacitor Android, using the supplied fictional case catalogue. Start in the repository root with Node.js 24 or newer:
+React web and Capacitor Android frontend, with English, Hindi and Marathi UI,
+a customer API adapter for the Spring backend, and an optional voice advisor.
+Use Node.js 24+ (CI uses Node 26) and Java 21 for the backend/full-stack checks.
 
-```sh
-npm ci
-npm run dev
-```
-
-Open http://127.0.0.1:5173/. No credentials or paid services are needed for the demo. The default sample workspace persists in this browser/device. Real AWS customer records are not loaded into the demo.
-
-## Available journeys
-
-- Overview with active services, changing order progress, consolidated balance, notifications and quick actions.
-- Three-step business questionnaire, eligibility-aware recommendations and saved drafts.
-- All 25 case products: search, category filters, eligibility filter, saved plans, sort, details, and comparison of up to three plans.
-- Dependency-aware bundle selection, quantity changes, quote breakdown and verification-gated demo checkout.
-- Both Digio and DigiLocker mock paths, document metadata picker, fictional sample documents and explicit consent.
-- Order timelines, sequential demo milestones, cancellation, preferred installation slots and calendar exports.
-- Consolidated demo invoices, category spending, immutable line-price snapshots, multi-page PDF exports, CSV statement and payment simulation.
-- Active-service quantity management, support FAQs and locally saved support requests.
-- Profile and preferences, reduced motion, workspace export/reset, global search and unread updates.
-- Voice advisor Coming Soon with the questionnaire fallback. There is no active microphone, speech provider or telephone integration in this build. `VITE_VOICE_ENABLED` remains false; setting it true alone does not implement or enable a voice session.
-
-No verification, payment, installation or support submission in the demo creates an external transaction. The document picker stores names, sizes and MIME metadata; it never uploads the contents. Use the supplied fictional documents for demonstrations.
-
-## Web build and checks
-
-```sh
-npm run build
-npm test
-npm run test:e2e
-npm run preview
-```
-
-`build` checks types and writes website assets to `apps/customer/dist/`. End-to-end tests use the locally installed Google Chrome and run desktop and phone viewports. For headless CI without Chrome, install the appropriate browser or adjust Playwright's `channel`. Accessibility checks cover WCAG 2.1 A/AA rules on key pages; they supplement manual review rather than certify compliance.
-
-Client routes use hashes so CloudFront/S3 and the packaged Android WebView can open all customer routes without server rewrites. Publish the contents of `dist/` to the existing private website bucket; keep the current CloudFront origin access control. The app does not provision AWS resources or deploy itself.
-
-## Android package
-
-The checked-in `android/` project uses `com.airtelsync.customer`, SDK 36, minimum SDK 24 and Java 21. Install Android Studio 2025.2.1 or newer and its SDK platform/build tools. Android Studio supplies the JDK. Setup reference: https://capacitorjs.com/docs/getting-started/environment-setup.
+## Local demo
 
 From the repository root:
 
 ```sh
+npm ci
+VITE_API_BASE_URL= npm run dev
+```
+
+Open http://127.0.0.1:5173/. An unset/empty/placeholder API URL selects the local
+sample workspace, stored in this browser. The demo needs no cloud/provider keys.
+Demo documents store metadata only; orders, payments and milestones are simulations.
+
+## Connect the Spring backend
+
+Configure the public VITE values from the root `.env.example` in ignored
+`.env.local`. Vite reads that root file. A configured API URL selects the cloud
+workspace: it requires Cognito access-token sign-in, loads actual account records,
+and never substitutes sample data when an API request fails.
+
+Start the Spring backend with Java 21 and the Cognito issuer/client configuration:
+
+```sh
+cd services/sync-backend
+./mvnw spring-boot:run
+```
+
+For local web login, set `VITE_API_BASE_URL=http://localhost:8080`, point
+VITE_COGNITO_AUTHORITY/CLIENT_ID/DOMAIN at the same pool/client as the backend, and
+set VITE_REDIRECT_URI and VITE_LOGOUT_URI to `http://127.0.0.1:5173/`. Register those
+exact callback/logout URLs in Cognito first. Set backend SYNC_CORS_ALLOWED_ORIGINS
+to include that origin. The current deployed CloudFront callback cannot complete
+a local redirect until this registration is made.
+
+The OIDC flow uses authorization code + PKCE, access tokens (never ID tokens),
+refresh before expiry, callback cleanup and Cognito logout. User tokens live in
+sessionStorage rather than localStorage. Account switches and logout clear loaded
+records. Preferences/cart UI state cannot overwrite API-owned profiles or orders.
+Cloud profiles are not copied into the browser's demo workspace storage.
+
+Connected journeys include profile save, deterministic recommendations, server
+quotes, idempotent demo checkout, paginated orders/invoices, private document-byte
+upload and completion, consent/demo KYC, tickets/resolution and notification reads.
+Document uploads send bearer credentials only to the backend's owned local upload
+endpoint; S3 receives only its presigned headers. Pending uploads can be removed.
+The catalogue must match the shared app catalogue before transactions continue.
+
+The backend defaults to disabling simulated checkout/KYC. To exercise those paths
+in a demo environment, explicitly set SYNC_DEMO_ENABLED=true and KYC_MODE=mock.
+This does not enable real identity verification, payments or service purchase.
+Cloud payment simulation, service quantity mutation, installation rescheduling and
+customer milestone advancement are unavailable because those customer APIs do not
+exist. Local demo controls remain available only in local demo mode.
+
+Real AWS/Cognito deployment is separate from local integration testing. See
+[backend configuration](../../services/sync-backend/README.md).
+
+## Assistant
+
+Typed chat is also available with `VITE_CHAT_ENABLED=true`, using the same local gateway and a Gemini key without microphone/Sarvam. It has separate conversation consent and can clear the transient history. Do not share identity documents or secrets in chat.
+
+The assistant supports speech-pause sending, continuous listening, detected-language
+replies, provider quota/key fallbacks and session cleanup. It still needs the
+separate server-side voice service and provider credentials; never expose API keys
+through VITE variables. Run `npm run dev:voice` alongside the frontend for the
+loopback development proxy and explicitly set VITE_VOICE_ENABLED=true for voice
+controls. With the flag disabled, the questionnaire is offered instead.
+VITE_VOICE_API_BASE_URL can select a separately hosted
+voice endpoint with appropriate authentication/CORS; the development service itself
+must not be exposed publicly as a production gateway.
+
+Suggestions can be reviewed as a bundle after product, quantity and eligibility
+checks. Checkout prices always come from the catalogue/backend rather than the
+assistant's displayed price range. Recording and provider transmission require
+explicit consent. The questionnaire remains available without speech providers.
+
+## Languages and exports
+
+The top-bar selector offers English, हिन्दी and मराठी. The choice persists across
+reloads, updates document language, navigation, forms, consent, help, status labels,
+dates and currency. API enums, product IDs, quantities and prices stay canonical;
+customer names, addresses, transcripts and product trade names are not translated.
+Unknown provider messages fall back to their original text.
+
+Hindi and Marathi share bundled Noto Sans Devanagari, including its SIL OFL license.
+Invoice PDFs embed the Unicode font so business names and addresses are preserved;
+PDF headings remain English. No online translation provider or language API key is
+required. Dictionaries live in `src/locales/`; tests check static UI coverage and
+placeholder consistency.
+
+## Verification
+
+```sh
+npm run build
+npm test
+npm run test:sales-bot
+npm run test:e2e
+# With JAVA_HOME pointing to Java 21:
+npm run test:integration
+```
+
+Demo browser tests use a dedicated frontend at port 5175. The integration runner
+starts Spring on 18081 and Vite on 5174, supplies locally signed test JWTs via an
+external temporary fixture, and removes all fixtures/stops servers on exit. It
+uses actual Spring routes and uploaded bytes; it does not mock successful business
+API responses. A few failure tests deliberately simulate network/API failures.
+The signing configuration exists only in test sources and is not packaged in the
+production JAR. Tests never require real customer credentials or provider credits.
+
+Playwright tests use installed Google Chrome by default, or set
+PLAYWRIGHT_CHANNEL=chromium after installing the Playwright browser. Both desktop
+and mobile viewports are covered, with accessibility and horizontal-overflow checks.
+CI runs the build, unit, assistant, browser and real local full-stack suites.
+
+## Android and hosting
+
+Hash-based routes work on CloudFront/S3 and the packaged WebView without SPA
+rewrites. Publish `dist/` through the existing website-hosting setup when authorized;
+this repository does not automatically deploy infrastructure.
+
+```sh
 npm run android:sync
-npm run android:open
-# After SDK setup, generate an installable development APK:
 npm run android:debug
 ```
 
-The debug APK is written to `apps/customer/android/app/build/outputs/apk/debug/app-debug.apk`. This is a development build, not a signed store release. Never commit build output, `local.properties`, signing keys or credentials. There is no APK until this build actually succeeds.
+The Android project uses Java 21, SDK 36 and minimum SDK 24. Building an APK requires
+a configured Android SDK. Native exports use the share sheet and app-cache files.
+Native cloud sign-in still requires a mobile client, system-browser flow, registered
+return URI and secure platform token handling. The application explains that
+limitation rather than pretending the web redirect is a native login. Device and
+live-provider testing are separate from the mobile browser checks.
 
-Native file exports use the system share sheet from app-cache files. Android Back closes a dialog, navigates through the app, or minimizes it from the overview. These native paths still require emulator/device verification. The initial build machine had no Java runtime or Android SDK, so only project generation and Capacitor sync have been verified.
-
-## Live account and backend boundary
-
-Copy the root `.env.example` to ignored `.env.local` and replace public configuration placeholders only when connecting your deployment. Vite reads the root env files. All `VITE_*` values are exposed in the browser build; API/provider secrets must remain server-side.
-
-The web account screen includes Cognito authorization code + PKCE, callback cleanup and Cognito-domain logout. The web callback/logout URLs must exactly match the deployed website or explicitly allowed local origin. Tokens are held in memory; reloading requires sign-in again. Signed-in success and logout against the live pool remain integration checks.
-
-Native live sign-in is intentionally unavailable until a separate public mobile client, system-browser flow, app return URI and secure token handling are implemented. The native demo works without live sign-in.
-
-`src/lib/api.ts` describes future `/v1` customer endpoints and sends bearer access tokens. It never silently replaces a failed network request with demo data. Current cloud infrastructure only implements `/health` and `/auth-check`; the app does not pretend those diagnostics constitute a customer backend. See [the backend handoff](../../docs/customer-api-handoff.md).
-
-## Code ownership
-
-`packages/domain` contains shared UI/demo business rules, reusable by the future backend after server-side enforcement is added. Prices are integer paise and the tax is an illustrative demo assumption. The full mock registries and lead data are not imported into the browser bundle. Partner/reviewer/admin UI is a separate later application.
+Font source: [Google Noto Sans Devanagari](https://github.com/google/fonts/tree/main/ofl/notosansdevanagari).

@@ -1,0 +1,92 @@
+{
+  "validationDate": "2026-07-15",
+  "sourceFiles": {
+    "product_catalogue.csv": {
+      "rows": 25,
+      "repositoryRows": 25,
+      "identicalBytes": false,
+      "changedFields": {
+        "description": 1
+      },
+      "sourceSha256": "5110529705bda36f668cfc92e7de943a4d3c6d5b7f78ae35c4d7b0484a136e0c"
+    },
+    "smb_leads.csv": {
+      "rows": 5000,
+      "repositoryRows": 5000,
+      "identicalBytes": false,
+      "changedFields": {
+        "current_provider": 1890
+      },
+      "sourceSha256": "b2521e8cedcf3b5775a087d40d07f548afbe3e7094a9fbad3a3908ffb01120ea"
+    },
+    "mock_gstin_registry.csv": {
+      "rows": 3534,
+      "repositoryRows": 3534,
+      "identicalBytes": true,
+      "changedFields": {},
+      "sourceSha256": "53f18df9ef8298dfc02640aedca6329805167d4b414499b763b493f48095f33a"
+    },
+    "mock_udyam_registry.csv": {
+      "rows": 2723,
+      "repositoryRows": 2723,
+      "identicalBytes": true,
+      "changedFields": {},
+      "sourceSha256": "588ae3503180dd3404bebe1eab480a7c57b637ca0d40a50ae636005f6a59032f"
+    }
+  },
+  "images": {
+    "count": 47,
+    "allMatchRepository": true
+  },
+  "funnel": {
+    "leads": 5000,
+    "contacted": 3406,
+    "needs_assessed": 1974,
+    "quote_accepted": 861,
+    "kyc_complete": 588,
+    "activated": 368
+  },
+  "activationRatePercent": 7.36,
+  "averageActivationDays": 17.62,
+  "averageFollowupCalls": 3.01,
+  "blendedCacInr": 15053.37,
+  "activatedSixMonthChurnPercent": 15.22,
+  "segments": {
+    "Micro retail & services": {
+      "leads": 2709,
+      "activated": 110,
+      "conversionPercent": 4.06,
+      "medianActivatedMonthlyInr": 2470.0
+    },
+    "Professional offices": {
+      "leads": 1247,
+      "activated": 138,
+      "conversionPercent": 11.07,
+      "medianActivatedMonthlyInr": 6575.0
+    },
+    "Small manufacturers": {
+      "leads": 289,
+      "activated": 37,
+      "conversionPercent": 12.8,
+      "medianActivatedMonthlyInr": 15910.0
+    },
+    "Small multi-site businesses": {
+      "leads": 755,
+      "activated": 83,
+      "conversionPercent": 10.99,
+      "medianActivatedMonthlyInr": 28080.0
+    }
+  },
+  "preferredLanguages": {
+    "Malayalam": 83,
+    "Punjabi": 96,
+    "English": 1168,
+    "Hindi": 2137,
+    "Telugu": 207,
+    "Bengali": 111,
+    "Kannada": 253,
+    "Marathi": 505,
+    "Gujarati": 233,
+    "Tamil": 207
+  }
+}

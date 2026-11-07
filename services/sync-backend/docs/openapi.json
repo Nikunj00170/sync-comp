@@ -2446,6 +2446,73 @@
           }
         ]
       }
+    },
+    "/v1/kyc/assessment": {
+      "post": {
+        "summary": "Consent-gated OCR and synthetic registry assessment of owned completed documents; demo gate required",
+        "responses": {
+          "200": {
+            "description": "Masked synthetic assessment; unreadable inputs require review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KycAssessment"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Consent/profile missing or concurrent change"
+          },
+          "503": {
+            "description": "Demo disabled or provider unavailable"
+          }
+        }
+      }
+    },
+    "/v1/registries/lookup": {
+      "post": {
+        "summary": "Single synthetic registration lookup for consented business onboarding; never a government API",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "identifier"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "gstin",
+                      "udyam"
+                    ]
+                  },
+                  "identifier": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Masked synthetic result with found, status and businessMatches, no full identifier or registry record"
+          },
+          "409": {
+            "description": "KYC consent/profile required"
+          },
+          "503": {
+            "description": "Demo disabled"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3357,6 +3424,61 @@
           "expiresAt",
           "status"
         ]
+      },
+      "KycAssessment": {
+        "type": "object",
+        "required": [
+          "status",
+          "asOf",
+          "source",
+          "documents",
+          "issues"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "needs_review"
+            ]
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "documentId": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "maskedIdentifier": {
+                  "type": "string"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

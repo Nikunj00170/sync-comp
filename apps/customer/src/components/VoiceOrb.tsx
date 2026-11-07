@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n';
 import { type CSSProperties, type RefObject } from 'react';
 export function VoiceOrb({
   state,
@@ -6,6 +7,7 @@ export function VoiceOrb({
   state: string;
   surface: RefObject<HTMLDivElement | null>;
 }) {
+  const { t, locale } = useI18n();
   const id = state.toLowerCase().replaceAll(' ', '-');
   return (
     <div
@@ -26,7 +28,7 @@ export function VoiceOrb({
         <div className="voice-shadow" />
       </div>
       <div className="voice-stage-caption">
-        <span className="voice-live-dot" /> ACCEL TELECOM <span>VOICE CONCIERGE</span>
+        <span className="voice-live-dot" />{t(" ACCEL TELECOM ")}<span>{t("VOICE CONCIERGE")}</span>
       </div>
     </div>
   );

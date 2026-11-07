@@ -1,4 +1,11 @@
+import { useI18n } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { addToCart, quote } from '@sync/domain';
+import { useWorkspace } from '../lib/store';
+import { useAction } from '../lib/actions';
+import { customerApi } from '../lib/api';
+import { accessToken } from '../lib/auth';
 import { VoiceOrb } from './VoiceOrb';
 import { createVoiceActivity } from '../lib/voiceActivity';
 
@@ -25,7 +32,30 @@ type Turn = {
   sessionId?: string;
   bundle?: Bundle | null;
 };
-export function VoiceAdvisor() {
+export function VoiceAdvisor({ onApplied }: { onApplied?: () => void } = {}) {
+  const { t, locale } = useI18n();
+  const { data, setData, cloud } = useWorkspace();
+  const navigate = useNavigate();
+  const { run, busy } = useAction();
+  const voiceBase = (import.meta.env.VITE_VOICE_API_BASE_URL || '').replace(/\/$/, '');
+  async function reviewBundle(bundle: Bundle) {
+    let lines = data.cart;
+    for (const item of bundle.items) {
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000)
+        throw new Error('The advisor suggested an invalid quantity. Choose a plan manually.');
+      lines = addToCart(lines, item.product_id, data.profile).map((line) =>
+        line.productId === item.product_id ? { ...line, quantity: item.quantity } : line,
+      );
+    }
+    const checked = cloud
+      ? await customerApi.quote(await accessToken(), lines)
+      : quote(lines, data.profile);
+    if (checked.errors.length) throw new Error(checked.errors.join('. '));
+    end();
+    setData((previous) => ({ ...previous, cart: checked.lines }));
+    navigate('/checkout');
+    onApplied?.();
+  }
   const surface = useRef<HTMLDivElement | null>(null);
   const speechHeard = useRef(false);
   const [autoSendAvailable, setAutoSendAvailable] = useState(true);
@@ -52,7 +82,7 @@ export function VoiceAdvisor() {
   }
   function clearSession() {
     if (sessionId.current) {
-      void fetch('/api/voice/session', {
+      void fetch(voiceBase + '/api/voice/session', {
         method: 'DELETE',
         headers: { 'X-Voice-Session': sessionId.current },
         keepalive: true,
@@ -162,7 +192,7 @@ export function VoiceAdvisor() {
         controller.current = new AbortController();
         const timeout = setTimeout(() => controller.current?.abort(), 240_000);
         try {
-          const response = await fetch('/api/voice/turn', {
+          const response = await fetch(voiceBase + '/api/voice/turn', {
             method: 'POST',
             headers: {
               'Content-Type': mimeType,
@@ -242,25 +272,26 @@ export function VoiceAdvisor() {
   startNext.current = () => {
     void start();
   };
+  if (import.meta.env.VITE_VOICE_ENABLED !== 'true') return <section className="panel" role="note"><h3>{t('Voice advisor is disabled in this build.')}</h3><p>{t('Use Find my fit, or enable a configured voice service to start a conversation.')}</p><button className="button primary" onClick={() => { navigate('/discover'); onApplied?.(); }}>{t('Find my fit')}</button></section>;
   return (
     <div className="voice-advisor">
       <VoiceOrb state={state} surface={surface} />
       <div className="voice-intro">
         <h3>
           {state === 'Listening'
-            ? 'Go ahead. I’m listening.'
+            ? t("Go ahead. I’m listening.")
             : state === 'Thinking'
-              ? 'Finding your best fit…'
+              ? t("Finding your best fit…")
               : state === 'Speaking'
-                ? 'A little clarity, out loud.'
-                : 'Let’s find your business a better connection.'}
+                ? t("A little clarity, out loud.")
+                : t("Let’s find your business a better connection.")}
         </h3>
         <p>
           {state === 'Listening'
-            ? 'Speak naturally, then pause. Your reply sends automatically.'
+            ? t("Speak naturally, then pause. Your reply sends automatically.")
             : state === 'Speaking'
-              ? 'I’ll listen again when this reply finishes.'
-              : 'One conversation. Your language. A bundle built around you.'}
+              ? t("I’ll listen again when this reply finishes.")
+              : t("One conversation. Your language. A bundle built around you.")}
         </p>
       </div>
       <label className="check-label">
@@ -269,10 +300,7 @@ export function VoiceAdvisor() {
           checked={consent}
           disabled={state !== 'Ready'}
           onChange={(e) => setConsent(e.target.checked)}
-        />{' '}
-        I agree to send my recording and conversation context to Sarvam AI for speech and Google
-        Gemini for a catalogue-based reply.
-      </label>
+        />{' '}{t("I agree to send my recording and conversation context to Sarvam AI for speech and Google Gemini for a catalogue-based reply.")}</label>
       <label className="check-label">
         <input
           type="checkbox"
@@ -281,30 +309,23 @@ export function VoiceAdvisor() {
             setAutoContinue(e.target.checked);
             continuous.current = e.target.checked && state !== 'Ready';
           }}
-        />{' '}
-        Continue listening after each reply
-      </label>
-      <label className="voice-pause-control">
-        Pause before sending
-        <select
-          aria-label="Pause before sending"
+        />{' '}{t("Continue listening after each reply")}</label>
+      <label className="voice-pause-control">{t("Pause before sending")}<select
+          aria-label={t("Pause before sending")}
           value={pauseMs}
           disabled={state !== 'Ready'}
           onChange={(e) => setPauseMs(Number(e.target.value))}
         >
-          <option value={1000}>Quick · 1 second</option>
-          <option value={1400}>Natural · 1.4 seconds</option>
-          <option value={2200}>Relaxed · 2.2 seconds</option>
+          <option value={1000}>{t("Quick · 1 second")}</option>
+          <option value={1400}>{t("Natural · 1.4 seconds")}</option>
+          <option value={2200}>{t("Relaxed · 2.2 seconds")}</option>
         </select>
       </label>
       {!autoSendAvailable && (
-        <p className="notice" role="note">
-          Automatic pause detection is unavailable in this browser. Use Send question to finish your
-          turn.
-        </p>
+        <p className="notice" role="note">{t("Automatic pause detection is unavailable in this browser. Use Send question to finish your turn.")}</p>
       )}
       <p className="voice-status" role="status" aria-live="polite">
-        {state}
+        {t(state)}
       </p>
       <div className="form-navigation">
         {state === 'Ready' && (
@@ -315,22 +336,16 @@ export function VoiceAdvisor() {
               continuous.current = autoContinue;
               void start();
             }}
-          >
-            Speak to advisor
-          </button>
+          >{t("Speak to advisor")}</button>
         )}
         {state === 'Listening' && (
           <button
             className="text-button voice-send-fallback"
             onClick={() => recorder.current?.stop()}
-          >
-            Send question
-          </button>
+          >{t("Send question")}</button>
         )}
         {state !== 'Ready' && (
-          <button className="button secondary" onClick={end}>
-            Stop
-          </button>
+          <button className="button secondary" onClick={end}>{t("Stop")}</button>
         )}
         <button
           className="text-button"
@@ -340,33 +355,35 @@ export function VoiceAdvisor() {
             setTurns([]);
             setError('');
           }}
-        >
-          End call & clear
-        </button>
+        >{t("End call & clear")}</button>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert">{t(error)}</p>}
       <div className="voice-transcript">
         {turns.map((turn, i) => (
           <article key={i} className="panel" style={{ marginTop: 16, overflowWrap: 'anywhere' }}>
-            <h3>You said</h3>
+            <h3>{t("You said")}</h3>
             <p>{turn.transcript}</p>
-            <h3>Catalogue advisor {turn.language && <small>({turn.language})</small>}</h3>
+            <h3>{t("Catalogue advisor ")}{turn.language && <small>({turn.language})</small>}</h3>
             <p style={{ whiteSpace: 'pre-wrap' }}>{turn.answer}</p>
             {turn.bundle && (
               <div>
-                <h4>Suggested bundle</h4>
+                <h4>{t("Suggested bundle")}</h4>
                 {turn.bundle.items.map((item) => (
                   <p key={item.product_id}>
-                    {item.quantity} × {item.name}: INR {item.monthlyMin}–{item.monthlyMax}/month
-                    <br />
-                    <small>Source: {item.reference}</small>
+                    {item.quantity} × {item.name}{t(": INR ")}{item.monthlyMin}–{item.monthlyMax}{t("/month")}<br />
+                    <small>{t("Source: ")}{item.reference}</small>
                   </p>
                 ))}
-                <p>
-                  Total: INR {turn.bundle.monthlyMin}–{turn.bundle.monthlyMax}/month · Setup: INR{' '}
+                <p>{t("Total: INR ")}{turn.bundle.monthlyMin}–{turn.bundle.monthlyMax}{t("/month · Setup: INR")}{' '}
                   {turn.bundle.setup}
                 </p>
                 <small>{turn.bundle.note}</small>
+                <p className="muted small">{t("Review current catalogue prices and eligibility before checkout.")}</p>
+                <button
+                  className="button primary"
+                  disabled={busy}
+                  onClick={() => void run(() => reviewBundle(turn.bundle!))}
+                >{t("Review this bundle")}</button>
               </div>
             )}
             {!!turn.audios.length && (
@@ -374,9 +391,7 @@ export function VoiceAdvisor() {
                 className="button secondary"
                 disabled={state !== 'Ready'}
                 onClick={() => void play(turn.audios, generation.current)}
-              >
-                Replay reply
-              </button>
+              >{t("Replay reply")}</button>
             )}
           </article>
         ))}

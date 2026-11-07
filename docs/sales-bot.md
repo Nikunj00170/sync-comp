@@ -59,3 +59,9 @@ Gemini HTTP 429 handling distinguishes daily quotas from temporary rate limits u
 ## Gemini key rotation
 
 Set `GEMINI_API_KEY` and optionally `GEMINI_API_KEY_2` in ignored `.env.local` (or `.env`). The voice backend and CLI load `.env` first, then `.env.local`; already-exported shell variables take precedence. Each model request selects the next distinct configured key. Quota-cooled keys are skipped, and a 429 can try the other key once; if both are exhausted, the request stops with the quota explanation. Blank/duplicate keys are ignored. No keys are sent to the browser or logged. Restart the voice backend after changing keys. Keys in the same Google project still share project quotas; rotation does not create additional quota.
+
+## Typed advisor and current tools
+
+The customer advisor dialog also offers typed chat when `VITE_CHAT_ENABLED=true` is set at build time. Run the same local `npm run dev:voice` gateway; text uses `/api/voice/chat`, requires separate Google Gemini conversation consent and does not require a microphone or Sarvam key. English, Hindi and Marathi UI choices supply the corresponding conversation language. Chat and voice collect existing internet/business tools in addition to business needs, team, locations, tier, GST and budget. Suggested products go through canonical cart/quote validation; model amounts cannot set checkout prices.
+
+Text input is limited to 2,000 characters and the HTTP body to 16 KB. Session TTL, concurrency and quota handling are shared with voice. Clear, consent withdrawal and dialog close delete the transient session. `VOICE_DEV_PORT` optionally changes the loopback port for isolated checks. This server is for local development; deploy an authenticated/throttled gateway and appropriate origin/session protection before enabling it in a public build.

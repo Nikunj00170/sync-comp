@@ -1,8 +1,9 @@
-export const fields = ['business', 'needs', 'sites', 'employees', 'budget', 'tier', 'gstin'];
+export const fields = ['business', 'needs', 'currentTools', 'sites', 'employees', 'budget', 'tier', 'gstin'];
 export const missingFields = (requirements) =>
   fields.filter((k) => requirements[k] === undefined || requirements[k] === '');
 const questions = {
   'en-IN': {
+    currentTools: 'What internet connection and business tools do you use today? You can say none.',
     business: 'What kind of business do you run?',
     needs: 'What would you like to improve: internet, security, communications, or something else?',
     sites: 'How many business locations do you need to connect?',
@@ -12,6 +13,7 @@ const questions = {
     gstin: 'Does your business have a GST registration?',
   },
   'hi-IN': {
+    currentTools: 'अभी आप कौन सा इंटरनेट और व्यावसायिक उपकरण इस्तेमाल करते हैं? न होने पर कोई नहीं कहें।',
     business: 'आपका किस तरह का व्यवसाय है?',
     needs: 'आपको इंटरनेट, सुरक्षा, संचार या किस सेवा की ज़रूरत है?',
     sites: 'कितने व्यावसायिक स्थानों को जोड़ना है?',

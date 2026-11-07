@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -17,7 +18,6 @@ import {
 import {
   cancelOrder,
   localDateTime,
-  money,
   nextOrder,
   orderSteps,
   productById,
@@ -29,7 +29,8 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { downloadCalendar } from '../lib/downloads';
 export default function Orders() {
-  const { data, setData } = useWorkspace(),
+  const { t, locale } = useI18n();
+  const { data, setData, cloud, cancel: cancelRemote } = useWorkspace(),
     notify = useNotify();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,10 +44,8 @@ export default function Orders() {
     return (
       <div className="empty-state">
         <Package size={42} />
-        <h1>We couldn’t find that order.</h1>
-        <Link className="button primary" to="/orders">
-          View your orders
-        </Link>
+        <h1>{t("We couldn’t find that order.")}</h1>
+        <Link className="button primary" to="/orders">{t("View your orders")}</Link>
       </div>
     );
   if (order) {
@@ -54,8 +53,7 @@ export default function Orders() {
     return (
       <>
         <Link to="/orders" className="back-link">
-          <ArrowLeft size={15} /> All orders
-        </Link>
+          <ArrowLeft size={15} />{t(" All orders")}</Link>
         <div className="page-heading">
           <div>
             <span className="eyebrow">{order.id}</span>
@@ -63,7 +61,7 @@ export default function Orders() {
               {order.name}
               <span className="heading-dot">.</span>
             </h1>
-            <p>Every little step, all in one place.</p>
+            <p>{t("Every little step, all in one place.")}</p>
           </div>
           <span
             className={
@@ -75,15 +73,15 @@ export default function Orders() {
                   : 'amber')
             }
           >
-            {statusLabels[order.status]}
+            {t(statusLabels[order.status])}
           </span>
         </div>
         <div className="order-detail-layout">
           <div>
             <section className="panel">
               <div className="section-heading">
-                <h2>Your connection journey</h2>
-                <span className="muted small">Sample milestones</span>
+                <h2>{t("Your connection journey")}</h2>
+                <span className="muted small">{t("Sample milestones")}</span>
               </div>
               <div className="order-timeline">
                 {orderSteps.map((s, i) => (
@@ -99,7 +97,7 @@ export default function Orders() {
                       {i < current ? <Check size={15} /> : i === current ? <span /> : i + 1}
                     </span>
                     <div>
-                      <h3>{statusLabels[s]}</h3>
+                      <h3>{t(statusLabels[s])}</h3>
                       <p>
                         {
                           [
@@ -113,18 +111,18 @@ export default function Orders() {
                         }
                       </p>
                       {i === current && order.status !== 'active' && (
-                        <span className="badge amber">You’re here</span>
+                        <span className="badge amber">{t("You’re here")}</span>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
               {order.status === 'cancelled' && (
-                <div className="notice warning">This demo order was cancelled.</div>
+                <div className="notice warning">{t("This demo order was cancelled.")}</div>
               )}
             </section>
             <section className="panel">
-              <h2>Everything in your order</h2>
+              <h2>{t("Everything in your order")}</h2>
               <div className="order-products">
                 {order.lines.map((l) => (
                   <div key={l.productId}>
@@ -135,33 +133,32 @@ export default function Orders() {
                       <strong>{productById(l.productId)?.name}</strong>
                       <small>
                         {l.quantity} {productById(l.productId)?.unit.replace('per ', '')}
-                        {l.quantity > 1 ? 's' : ''}
+                        {l.quantity > 1 ? t("s") : ''}
                       </small>
                     </span>
                     <strong>
                       {money((productById(l.productId)?.price || 0) * l.quantity)}
-                      <small>/mo</small>
+                      <small>{t("/mo")}</small>
                     </strong>
                   </div>
                 ))}
               </div>
               <div className="summary-lines">
-                <span>
-                  Monthly total, including demo tax<strong>{money(order.quote.total)}</strong>
+                <span>{t("Monthly total, including demo tax")}<strong>{money(order.quote.total)}</strong>
                 </span>
               </div>
             </section>
             <section className="panel">
-              <h2>A little history</h2>
+              <h2>{t("A little history")}</h2>
               <div className="activity-list">
                 {[...order.events].reverse().map((e, i) => (
                   <div key={e.at + i}>
                     <span className="activity-dot" />
                     <span>
-                      <strong>{e.label}</strong>
+                      <strong>{t(e.label)}</strong>
                       <p>{e.detail}</p>
                       <small>
-                        {new Date(e.at).toLocaleString('en-IN', {
+                        {new Date(e.at).toLocaleString(locale, {
                           day: 'numeric',
                           month: 'short',
                           hour: 'numeric',
@@ -179,32 +176,30 @@ export default function Orders() {
               <span className="stat-icon blue">
                 <CalendarDays size={25} />
               </span>
-              <h2>A time that works for you.</h2>
+              <h2>{t("A time that works for you.")}</h2>
               <p>
                 {order.slot
-                  ? new Date(order.slot).toLocaleString('en-IN', {
+                  ? new Date(order.slot).toLocaleString(locale, {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
                       hour: 'numeric',
                       minute: '2-digit',
                     })
-                  : 'Choose a preferred sample installation slot.'}
+                  : t("Choose a preferred sample installation slot.")}
               </p>
               <div className="address-line">
                 <MapPin size={18} />
                 <span>{order.address}</span>
               </div>
-              {!['active', 'cancelled'].includes(order.status) && (
+              {!cloud && !['active', 'cancelled'].includes(order.status) && (
                 <button
                   className="button secondary full"
                   onClick={() => {
                     setSlot(localDateTime(order.slot));
                     setReschedule(true);
                   }}
-                >
-                  Change demo slot
-                </button>
+                >{t("Change demo slot")}</button>
               )}
               {order.slot && (
                 <button
@@ -215,24 +210,21 @@ export default function Orders() {
                       .catch((e) => notify(e.message))
                   }
                 >
-                  <Download size={15} /> Add to calendar
-                </button>
+                  <Download size={15} />{t(" Add to calendar")}</button>
               )}
-              <small className="muted">
-                This is a demo appointment, not a real installation booking.
-              </small>
+              <small className="muted">{t("This is a demo appointment, not a real installation booking.")}</small>
             </section>
             <section className="panel">
-              <h3>Need a helping hand?</h3>
-              <p className="muted">Tell us what you need. Keep the order reference handy.</p>
-              <Link to="/support" className="button secondary full">
-                Get support <ArrowRight size={16} />
+              <h3>{t("Need a helping hand?")}</h3>
+              <p className="muted">{t("Tell us what you need. Keep the order reference handy.")}</p>
+              <Link to="/support" className="button secondary full">{t("Get support ")}<ArrowRight size={16} />
               </Link>
             </section>
             <section className="demo-control">
-              <span className="eyebrow">DEMO CONTROLS</span>
-              <p>Explore how the timeline changes. No real order is affected.</p>
+              <span className="eyebrow">{t("DEMO CONTROLS")}</span>
+              <p>{t("Explore how the timeline changes. No real order is affected.")}</p>
               <button
+                hidden={cloud}
                 className="button secondary full"
                 disabled={['active', 'cancelled'].includes(order.status)}
                 onClick={() => {
@@ -247,25 +239,17 @@ export default function Orders() {
                     notify((e as Error).message);
                   }
                 }}
-              >
-                Simulate next milestone
-              </button>
+              >{t("Simulate next milestone")}</button>
               {!['active', 'cancelled', 'installing'].includes(order.status) && (
-                <button className="text-button danger full center" onClick={() => setCancel(true)}>
-                  Cancel demo order
-                </button>
+                <button className="text-button danger full center" onClick={() => setCancel(true)}>{t("Cancel demo order")}</button>
               )}
             </section>
           </aside>
         </div>
         {reschedule && (
-          <Modal title="Make a little room in your calendar." onClose={() => setReschedule(false)}>
-            <p className="muted">
-              Choose a preferred demo installation time. This does not book a real technician.
-            </p>
-            <label className="form-field">
-              Installation date and time
-              <input
+          <Modal title={t("Make a little room in your calendar.")} onClose={() => setReschedule(false)}>
+            <p className="muted">{t("Choose a preferred demo installation time. This does not book a real technician.")}</p>
+            <label className="form-field">{t("Installation date and time")}<input
                 type="datetime-local"
                 value={slot}
                 min={localDateTime()}
@@ -298,39 +282,26 @@ export default function Orders() {
                 setReschedule(false);
                 notify('Your preferred demo slot is saved.');
               }}
-            >
-              Save demo slot
-            </button>
+            >{t("Save demo slot")}</button>
           </Modal>
         )}
         {cancel && (
-          <Modal title="Cancel this demo order?" onClose={() => setCancel(false)}>
-            <p>
-              This removes the order from your upcoming demo connections. Existing active services
-              stay as they are.
-            </p>
+          <Modal title={t("Cancel this demo order?")} onClose={() => setCancel(false)}>
+            <p>{t("This removes the order from your upcoming demo connections. Existing active services stay as they are.")}</p>
             <div className="button-row">
-              <button className="button secondary" onClick={() => setCancel(false)}>
-                Keep my order
-              </button>
+              <button className="button secondary" onClick={() => setCancel(false)}>{t("Keep my order")}</button>
               <button
                 className="button primary"
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    const updated = cancelOrder(order);
-                    setData((d) => ({
-                      ...d,
-                      orders: d.orders.map((x) => (x.id === id ? updated : x)),
-                    }));
+                    await cancelRemote(order.id);
                     setCancel(false);
                     notify('Demo order cancelled.');
                   } catch (e) {
                     notify((e as Error).message);
                   }
                 }}
-              >
-                Cancel demo order
-              </button>
+              >{t("Cancel demo order")}</button>
             </div>
           </Modal>
         )}
@@ -351,14 +322,12 @@ export default function Orders() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">EVERY STEP, IN SYNC.</span>
-          <h1>
-            Good things are on their way<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("EVERY STEP, IN SYNC.")}</span>
+          <h1>{t("Good things are on their way")}<span className="heading-dot">.</span>
           </h1>
-          <p>Your orders, your milestones, and what happens next.</p>
+          <p>{t("Your orders, your milestones, and what happens next.")}</p>
         </div>
-        <Link className="button primary" to="/plans">
-          Explore more plans <ArrowRight size={17} />
+        <Link className="button primary" to="/plans">{t("Explore more plans ")}<ArrowRight size={17} />
         </Link>
       </div>
       <div className="filter-bar">
@@ -377,8 +346,8 @@ export default function Orders() {
         <div className="search-field">
           <Search size={17} />
           <input
-            aria-label="Search orders"
-            placeholder="Search order or reference…"
+            aria-label={t("Search orders")}
+            placeholder={t("Search order or reference…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -401,14 +370,13 @@ export default function Orders() {
                       : 'amber')
                 }
               >
-                {statusLabels[o.status]}
+                {t(statusLabels[o.status])}
               </span>
             </div>
             <span className="order-reference">{o.id}</span>
             <h2>{o.name}</h2>
             <p>
-              {o.lines.length} services · {money(o.quote.total)} / month with demo tax
-            </p>
+              {o.lines.length}{t(" services · ")}{money(o.quote.total)}{t(" / month with demo tax")}</p>
             <div className="order-card-progress">
               <span
                 style={{
@@ -420,15 +388,13 @@ export default function Orders() {
               />
             </div>
             <div className="section-inline">
-              <span className="muted small">
-                Placed{' '}
-                {new Date(o.createdAt).toLocaleDateString('en-IN', {
+              <span className="muted small">{t("Placed")}{' '}
+                {new Date(o.createdAt).toLocaleDateString(locale, {
                   day: 'numeric',
                   month: 'short',
                 })}
               </span>
-              <span className="text-button">
-                View journey <ArrowRight size={16} />
+              <span className="text-button">{t("View journey ")}<ArrowRight size={16} />
               </span>
             </div>
           </Link>
@@ -437,17 +403,15 @@ export default function Orders() {
       {!shown.length && (
         <div className="empty-state">
           <Package size={42} />
-          <h2>A little quiet here.</h2>
-          <p>No orders match this view.</p>
+          <h2>{t("A little quiet here.")}</h2>
+          <p>{t("No orders match this view.")}</p>
           <button
             className="button secondary"
             onClick={() => {
               setFilter('all');
               setSearch('');
             }}
-          >
-            View all orders
-          </button>
+          >{t("View all orders")}</button>
         </div>
       )}
     </>

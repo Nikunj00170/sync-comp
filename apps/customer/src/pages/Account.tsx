@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import {
   ArrowRight,
@@ -18,9 +19,18 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { download } from '../lib/downloads';
 import { authManager, signIn, signOut } from '../lib/auth';
-import { customerApi } from '../lib/api';
+import { useAction } from '../lib/actions';
 export default function Account() {
-  const { data, setData, reset } = useWorkspace(),
+  const { t, locale } = useI18n();
+  const {
+      data,
+      setData,
+      reset,
+      cloud,
+      connection: accountStatus,
+      refresh,
+      saveProfile,
+    } = useWorkspace(),
     notify = useNotify();
   const [profile, setProfile] = useState<Profile>({ ...data.profile }),
     [confirm, setConfirm] = useState(false),
@@ -28,7 +38,8 @@ export default function Account() {
     [connection, setConnection] = useState(''),
     [busy, setBusy] = useState(false);
   useEffect(() => setProfile({ ...data.profile }), [data.profile]);
-  function save(e: React.FormEvent) {
+  const action = useAction();
+  async function save(e: React.FormEvent) {
     e.preventDefault();
     const parsed = profileSchema.safeParse(profile);
     if (!parsed.success) {
@@ -36,8 +47,14 @@ export default function Account() {
       return;
     }
     setError('');
-    setData((d) => ({ ...d, profile: parsed.data }));
-    notify('Your demo business profile is saved.');
+    await action.run(async () => {
+      await saveProfile(parsed.data);
+      notify(
+        cloud
+          ? t("Your business profile is saved to your account.")
+          : t("Your demo business profile is saved."),
+      );
+    });
   }
   async function checkConnection() {
     try {
@@ -47,7 +64,7 @@ export default function Account() {
         throw new Error(
           'Sign in to your Cognito account first. The demo workspace remains available without sign-in.',
         );
-      await customerApi.profile(user.access_token);
+      await refresh();
       setConnection('Customer API responded successfully.');
     } catch (e) {
       setConnection((e as Error).message);
@@ -59,21 +76,20 @@ export default function Account() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">A WORKSPACE THAT FEELS LIKE YOU.</span>
-          <h1>
-            Your business, your way<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("A WORKSPACE THAT FEELS LIKE YOU.")}</span>
+          <h1>{t("Your business, your way")}<span className="heading-dot">.</span>
           </h1>
-          <p>Keep your details up to date and your experience just right.</p>
+          <p>{t("Keep your details up to date and your experience just right.")}</p>
         </div>
-        <span className="badge neutral">LOCAL DEMO PROFILE</span>
+        <span className="badge neutral">{cloud ? t("CUSTOMER PROFILE") : t("LOCAL DEMO PROFILE")}</span>
       </div>
       <div className="account-layout">
         <div>
           <form className="panel" onSubmit={save}>
             <div className="section-heading">
               <div>
-                <h2>Business details</h2>
-                <p>The little details behind your big ambitions.</p>
+                <h2>{t("Business details")}</h2>
+                <p>{t("The little details behind your big ambitions.")}</p>
               </div>
               <span className="stat-icon red">
                 <Building2 size={22} />
@@ -90,7 +106,7 @@ export default function Account() {
                 ] as const
               ).map((f) => (
                 <label className="form-field" key={f.key}>
-                  {f.label}
+                  {t(f.label)}
                   <input
                     type={f.key === 'email' ? 'email' : f.key === 'phone' ? 'tel' : 'text'}
                     value={profile[f.key]}
@@ -98,9 +114,7 @@ export default function Account() {
                   />
                 </label>
               ))}
-              <label className="form-field">
-                Team size
-                <input
+              <label className="form-field">{t("Team size")}<input
                   type="number"
                   min={1}
                   max={1000}
@@ -108,9 +122,70 @@ export default function Account() {
                   onChange={(e) => setProfile((p) => ({ ...p, employees: Number(e.target.value) }))}
                 />
               </label>
-              <label className="form-field span-two">
-                Business address
-                <textarea
+              <label className="form-field">{t("Industry")}<select
+                  value={profile.industry}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, industry: e.target.value as Profile['industry'] }))
+                  }
+                >
+                  {['professional', 'retail', 'manufacturing', 'hospitality'].map((value) => (
+                    <option key={value} value={value}>
+                      {t(value)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">{t("City tier")}<select
+                  value={profile.tier}
+                  onChange={(e) => setProfile((p) => ({ ...p, tier: Number(e.target.value) }))}
+                >
+                  <option value={1}>{t("Tier 1")}</option>
+                  <option value={2}>{t("Tier 2")}</option>
+                </select>
+              </label>
+              <label className="form-field">{t("Locations")}<input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={profile.sites}
+                  onChange={(e) => setProfile((p) => ({ ...p, sites: Number(e.target.value) }))}
+                />
+              </label>
+              <label className="form-field">{t("Monthly budget (INR)")}<input
+                  type="number"
+                  min={500}
+                  max={1000000}
+                  value={profile.budget}
+                  onChange={(e) => setProfile((p) => ({ ...p, budget: Number(e.target.value) }))}
+                />
+              </label>
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={profile.hasGstin}
+                  onChange={(e) => setProfile((p) => ({ ...p, hasGstin: e.target.checked }))}
+                />{t("GST registered")}</label>
+              <fieldset className="form-field">
+                <legend>{t("Business priorities")}</legend>
+                {['productivity', 'security', 'reliability', 'growth'].map((priority) => (
+                  <label className="check-label" key={priority}>
+                    <input
+                      type="checkbox"
+                      checked={profile.priorities.includes(priority)}
+                      onChange={(e) =>
+                        setProfile((p) => ({
+                          ...p,
+                          priorities: e.target.checked
+                            ? [...p.priorities, priority]
+                            : p.priorities.filter((x) => x !== priority),
+                        }))
+                      }
+                    />
+                    {t(priority)}
+                  </label>
+                ))}
+              </fieldset>
+              <label className="form-field span-two">{t("Business address")}<textarea
                   value={profile.address}
                   onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
                 />
@@ -118,18 +193,21 @@ export default function Account() {
             </div>
             {error && (
               <p className="field-error" role="alert">
-                {error}
+                {t(error)}
               </p>
             )}
-            <button className="button primary" type="submit">
-              <Save size={16} /> Save profile
-            </button>
+            <button
+              className="button primary"
+              type="submit"
+              disabled={action.busy || (cloud && accountStatus !== 'ready')}
+            >
+              <Save size={16} />{t(" Save profile")}</button>
           </form>
           <section className="panel">
             <div className="section-heading">
               <div>
-                <h2>A few personal touches</h2>
-                <p>Preferences are saved in your local demo.</p>
+                <h2>{t("A few personal touches")}</h2>
+                <p>{t("Preferences are saved in your local demo.")}</p>
               </div>
               <Settings2 size={22} />
             </div>
@@ -152,8 +230,8 @@ export default function Account() {
             ].map((item) => (
               <label className="preference-row" key={item.key}>
                 <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.text}</small>
+                  <strong>{t(item.label)}</strong>
+                  <small>{t(item.text)}</small>
                 </span>
                 <input
                   role="switch"
@@ -168,7 +246,7 @@ export default function Account() {
                 />
               </label>
             ))}
-            <p className="muted small">Email delivery is not connected in this demo.</p>
+            <p className="muted small">{t("Email delivery is not connected in this demo.")}</p>
           </section>
         </div>
         <aside>
@@ -176,10 +254,11 @@ export default function Account() {
             <span className="stat-icon green">
               <LockKeyhole size={25} />
             </span>
-            <h2>Your data, in your hands.</h2>
+            <h2>{t("Your data, in your hands.")}</h2>
             <p className="muted">
-              This demo uses sample data saved in your browser. Document file contents are never
-              saved. You can take a copy or start fresh.
+              {cloud
+                ? t("Your account records are stored by the customer API. Uploaded documents use private storage. You may export the records currently shown.")
+                : t("This demo uses sample data saved in your browser. Document file contents are never saved. You can take a copy or start fresh.")}
             </p>
             <button
               className="button secondary full"
@@ -192,20 +271,23 @@ export default function Account() {
                   .catch(() => notify('The workspace could not be exported. Please try again.'));
               }}
             >
-              <Download size={16} /> Export demo workspace
-            </button>
-            <button className="text-button danger full center" onClick={() => setConfirm(true)}>
-              <RotateCcw size={15} /> Reset demo workspace
-            </button>
+              <Download size={16} />{t(" Export demo workspace")}</button>
+            <button
+              className="text-button danger full center"
+              hidden={cloud}
+              onClick={() => setConfirm(true)}
+            >
+              <RotateCcw size={15} />{t(" Reset demo workspace")}</button>
           </section>
           <section className="panel account-connection">
             <span className="stat-icon blue">
               <UserRound size={24} />
             </span>
-            <h2>Your live account</h2>
+            <h2>{t("Your live account")}</h2>
             <p className="muted">
-              Cognito sign-in is separate from your demo workspace. Your live customer data appears
-              after the customer API is connected.
+              {cloud
+                ? t("Sign in to load your customer records. Failed requests never fall back to demo data.")
+                : t("This build is using the local demo. Configure VITE_API_BASE_URL and Cognito to use your customer account.")}
             </p>
             <button
               className="button secondary full"
@@ -216,36 +298,37 @@ export default function Account() {
                 })
               }
             >
-              <LogIn size={16} /> Sign in with Cognito
-            </button>
+              <LogIn size={16} />{t(" Sign in with Cognito")}</button>
             <button className="text-button full center" disabled={busy} onClick={checkConnection}>
-              {busy ? 'Checking…' : 'Check account connection'} <ArrowRight size={15} />
+              {busy ? t("Checking…") : t("Check account connection")} <ArrowRight size={15} />
             </button>
             <button
               className="text-button full center"
               onClick={() => signOut().catch((e) => notify(e.message))}
-            >
-              Sign out of live account
-            </button>
+            >{t("Sign out of live account")}</button>
+            {cloud && (
+              <p className="connection-message" role="status">
+                {accountStatus === 'ready'
+                  ? t("Customer API connected.")
+                  : accountStatus === 'loading'
+                    ? t("Loading account…")
+                    : t("Sign in to load your account.")}
+              </p>
+            )}
             {connection && (
               <p className="connection-message" role="status">
-                {connection}
+                {t(connection)}
               </p>
             )}
           </section>
         </aside>
       </div>
       {confirm && (
-        <Modal title="A fresh start for your demo?" onClose={() => setConfirm(false)}>
-          <p>
-            This resets the sample profile, saved plans, demo orders, payments, and support requests
-            on this device.
-          </p>
-          <p className="muted">Your AWS resources and live account are unaffected.</p>
+        <Modal title={t("A fresh start for your demo?")} onClose={() => setConfirm(false)}>
+          <p>{t("This resets the sample profile, saved plans, demo orders, payments, and support requests on this device.")}</p>
+          <p className="muted">{t("Your AWS resources and live account are unaffected.")}</p>
           <div className="button-row">
-            <button className="button secondary" onClick={() => setConfirm(false)}>
-              Keep my workspace
-            </button>
+            <button className="button secondary" onClick={() => setConfirm(false)}>{t("Keep my workspace")}</button>
             <button
               className="button primary"
               onClick={() => {
@@ -254,9 +337,7 @@ export default function Account() {
                 setConfirm(false);
                 notify('Your demo workspace has a fresh start.');
               }}
-            >
-              Reset demo
-            </button>
+            >{t("Reset demo")}</button>
           </div>
         </Modal>
       )}

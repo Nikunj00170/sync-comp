@@ -48,7 +48,7 @@ test('voice advisor records with consent, shows citations, and clears the call',
   await page.getByRole('button', { name: /Say hello to a smarter start/ }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('button', { name: 'Speak to advisor' })).toBeDisabled();
-  await dialog.getByRole('checkbox', { name: /I agree/ }).check();
+  await dialog.getByRole('checkbox', { name: /I agree to send my recording/ }).check();
   await dialog.getByRole('checkbox', { name: /Continue listening/ }).uncheck();
   await dialog.getByRole('button', { name: 'Speak to advisor' }).click();
   await expect(dialog.getByRole('status')).toHaveText('Listening');
@@ -129,7 +129,7 @@ test('a speech pause sends automatically without clicking Send question', async 
   await page.goto('/');
   await page.getByRole('button', { name: /Say hello to a smarter start/ }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('checkbox', { name: /I agree/ }).check();
+  await dialog.getByRole('checkbox', { name: /I agree to send my recording/ }).check();
   await dialog.getByRole('button', { name: 'Speak to advisor' }).click();
   await expect(dialog.getByText('What is your monthly budget?', { exact: true })).toBeVisible();
   expect(requests).toBe(1);

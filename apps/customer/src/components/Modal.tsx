@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 export function Modal({
@@ -11,6 +12,7 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
+  const { t, locale } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
   const closeRef = useRef(onClose);
@@ -64,8 +66,8 @@ export function Modal({
         ref={ref}
       >
         <div className="modal-head">
-          <h2 id={id}>{title}</h2>
-          <button className="icon-button" aria-label="Close dialog" onClick={onClose}>
+          <h2 id={id}>{t(title)}</h2>
+          <button className="icon-button" aria-label={t("Close dialog")} onClick={onClose}>
             <X size={20} />
           </button>
         </div>

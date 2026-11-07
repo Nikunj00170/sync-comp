@@ -1,3 +1,4 @@
+import { languages, validLanguage, useI18n } from './lib/i18n';
 import { Capacitor } from '@capacitor/core';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -26,6 +27,7 @@ import { catalogue } from '@sync/domain';
 import { useWorkspace } from './lib/store';
 import { useNotify } from './lib/feedback';
 import { VoiceAdvisor } from './components/VoiceAdvisor';
+import { ChatAdvisor } from './components/ChatAdvisor';
 import { Brand } from './components/Brand';
 import { Modal } from './components/Modal';
 import Dashboard from './pages/Dashboard';
@@ -38,7 +40,8 @@ const Verification = lazy(() => import('./pages/Verification'));
 const Billing = lazy(() => import('./pages/Billing'));
 const Support = lazy(() => import('./pages/Support'));
 const Account = lazy(() => import('./pages/Account'));
-import { finishSignIn } from './lib/auth';
+import { finishSignIn, signIn } from './lib/auth';
+import { useAction } from './lib/actions';
 const navigation = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
   { to: '/discover', label: 'Find my fit', icon: Sparkles },
@@ -50,7 +53,10 @@ const navigation = [
   { to: '/support', label: 'Help & support', icon: Headphones },
 ];
 export default function App() {
-  const { data, setData, storageError } = useWorkspace();
+  const { t, locale, language, setLanguage } = useI18n();
+  const { data, storageError, cloud, connection, connectionError, refresh, markRead } =
+    useWorkspace();
+  const { run, busy } = useAction();
   const notify = useNotify();
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,10 +83,10 @@ export default function App() {
     document.documentElement.dataset.reduceMotion = String(data.preferences.compactMotion);
   }, [data.preferences.compactMotion]);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has('code'))
+    if (['code', 'error'].some((key) => new URLSearchParams(window.location.search).has(key)))
       finishSignIn()
         .then(() => {
-          notify('Account sign-in complete. Your customer workspace is still in demo mode.');
+          notify(t("Account sign-in complete. Loading your customer workspace."));
           navigate('/account');
         })
         .catch((e) => notify(e.message));
@@ -117,13 +123,11 @@ export default function App() {
           e.preventDefault();
           document.getElementById('main')?.focus();
         }}
-      >
-        Skip to content
-      </a>
+      >{t("Skip to content")}</a>
       {menu && (
         <button
           className="sidebar-scrim"
-          aria-label="Close navigation"
+          aria-label={t("Close navigation")}
           onClick={() => setMenu(false)}
         />
       )}
@@ -132,15 +136,15 @@ export default function App() {
           <Brand />
         </Link>
         <div className="workspace-switch">
-          <div className="business-avatar">{data.profile.business.slice(0, 1) || 'N'}</div>
+          <div className="business-avatar">{data.profile.business.slice(0, 1) || t("N")}</div>
           <span>
-            <strong>{data.profile.business || 'My business'}</strong>
-            <small>Business workspace</small>
+            <strong>{data.profile.business || t("My business")}</strong>
+            <small>{t("Business workspace")}</small>
           </span>
           <ChevronDown size={16} />
         </div>
-        <span className="nav-caption">YOUR WORKSPACE</span>
-        <nav aria-label="Main navigation">
+        <span className="nav-caption">{t("YOUR WORKSPACE")}</span>
+        <nav aria-label={t("Main navigation")}>
           {navigation.map(({ to, label, icon: Icon }) => (
             <NavLink
               end={to === '/'}
@@ -149,7 +153,7 @@ export default function App() {
               className={({ isActive }) => 'nav-item ' + (isActive ? 'active' : '')}
             >
               <Icon size={19} />
-              <span>{label}</span>
+              <span>{t(label)}</span>
               {to === '/verification' && data.kyc.status === 'pending' && (
                 <span className="nav-count">1</span>
               )}
@@ -166,26 +170,17 @@ export default function App() {
             <div className="advisor-symbol">
               <Sparkles size={21} />
             </div>
-            <strong>
-              A little guidance.
-              <br />A better fit.
-            </strong>
-            <p>
-              Let’s find what works
-              <br />
-              for your business.
-            </p>
-            <Link to="/discover">
-              Find my plan <ArrowUpRight size={16} />
+            <strong>{t("A little guidance.")}<br />{t("A better fit.")}</strong>
+            <p>{t("Let’s find what works")}<br />{t("for your business.")}</p>
+            <Link to="/discover">{t("Find my plan ")}<ArrowUpRight size={16} />
             </Link>
           </div>
           <NavLink to="/account" className="nav-item">
             <Settings size={19} />
-            <span>Account & settings</span>
+            <span>{t("Account & settings")}</span>
           </NavLink>
           <div className="sidebar-foot">
-            <span className="status-dot" /> Your business, in sync.
-          </div>
+            <span className="status-dot" />{t(" Your business, in sync.")}</div>
         </div>
       </aside>
       <div className="main-shell">
@@ -193,18 +188,18 @@ export default function App() {
           <div className="topbar-left">
             <button
               className="icon-button mobile-menu"
-              aria-label="Open navigation"
+              aria-label={t("Open navigation")}
               onClick={() => setMenu(true)}
             >
               <Menu size={22} />
             </button>
-            <span className="breadcrumb">
-              Workspace <span>/</span> <strong>{current}</strong>
+            <span className="breadcrumb">{t("Workspace ")}<span>/</span> <strong>{t(current)}</strong>
             </span>
           </div>
           <div className="topbar-right">
+            <label className="language-control"><span className="sr-only">{t('Language')}</span><select aria-label={t('Language')} value={language} onChange={event => { if (validLanguage(event.target.value)) setLanguage(event.target.value); }}>{languages.map(item => <option key={item.code} value={item.code} lang={item.code}>{item.name}</option>)}</select></label>
             <button
-              aria-label="Search anything ⌘ K"
+              aria-label={t("Search anything ⌘ K")}
               className="search-trigger"
               onClick={() => {
                 setSearch(true);
@@ -212,15 +207,15 @@ export default function App() {
               }}
             >
               <Search size={17} />
-              <span>Search anything</span>
-              <kbd aria-hidden="true">⌘ K</kbd>
+              <span>{t("Search anything")}</span>
+              <kbd aria-hidden="true">{t("⌘ K")}</kbd>
             </button>
             <span className="demo-pill">
-              <span /> Demo workspace
+              <span /> {cloud ? t("Cloud workspace") : t("Demo workspace")}
             </span>
             <button
               className="icon-button bell-button"
-              aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')}
+              aria-label={t("Notifications") + (unread ? ', ' + unread + t(" unread") : '')}
               onClick={() => setBell(true)}
             >
               <Bell size={20} />
@@ -233,7 +228,7 @@ export default function App() {
                   .split(' ')
                   .map((x) => x[0])
                   .slice(0, 2)
-                  .join('') + ' · Account and settings'
+                  .join('') + t(" · Account and settings")
               }
               className="avatar"
             >
@@ -241,16 +236,13 @@ export default function App() {
                 .split(' ')
                 .map((x) => x[0])
                 .slice(0, 2)
-                .join('') || 'AS'}
+                .join('') || t("AS")}
             </Link>
           </div>
         </header>
         <main id="main" tabIndex={-1} className="page-content">
           {storageError && (
-            <div role="alert" className="notice warning">
-              Your browser storage is full or unavailable. Changes will last only until you close
-              this page.
-            </div>
+            <div role="alert" className="notice warning">{t("Your browser storage is full or unavailable. Changes will last only until you close this page.")}</div>
           )}
           <Suspense
             fallback={
@@ -259,43 +251,81 @@ export default function App() {
               </div>
             }
           >
-            <Routes>
-              <Route path="/" element={<Dashboard onAdvisor={() => setAdvisor(true)} />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:id" element={<Orders />} />
-              <Route path="/verification" element={<Verification />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/account" element={<Account />} />
-              <Route
-                path="*"
-                element={
-                  <div className="empty-state">
-                    <Package size={40} />
-                    <h1>Let’s get you back on track.</h1>
-                    <p>We couldn’t find this page.</p>
-                    <Link className="button primary" to="/">
-                      Back to overview
-                    </Link>
+            {cloud && connection !== 'ready' && location.pathname !== '/account' ? (
+              <section
+                className="panel connection-gate"
+                role={connection === 'error' ? 'alert' : 'status'}
+              >
+                <h1>
+                  {connection === 'loading'
+                    ? t("Loading your customer workspace…")
+                    : connection === 'error'
+                      ? t("Your workspace could not be loaded")
+                      : t("Sign in to your customer workspace")}
+                </h1>
+                <p>
+                  {t(connectionError) ||
+                    t("Your business records are loaded securely from the customer API.")}
+                </p>
+                {connection !== 'loading' && (
+                  <div className="button-row">
+                    <button
+                      className="button primary"
+                      disabled={busy}
+                      onClick={() => void run(signIn)}
+                    >{t("Sign in with Cognito")}</button>
+                    {connection === 'error' && (
+                      <button
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => void run(refresh)}
+                      >{t("Try again")}</button>
+                    )}
+                    <Link className="text-button" to="/account">{t("Account & settings")}</Link>
                   </div>
-                }
-              />
-            </Routes>
+                )}
+              </section>
+            ) : (
+              <Routes>
+                <Route path="/" element={<Dashboard onAdvisor={() => setAdvisor(true)} />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/discover" element={<Discover />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<Orders />} />
+                <Route path="/verification" element={<Verification />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/support" element={<Support />} />
+                <Route path="/account" element={<Account />} />
+                <Route
+                  path="*"
+                  element={
+                    <div className="empty-state">
+                      <Package size={40} />
+                      <h1>Let’s get you back on track.</h1>
+                      <p>We couldn’t find this page.</p>
+                      <Link className="button primary" to="/">
+                        Back to overview
+                      </Link>
+                    </div>
+                  }
+                />
+              </Routes>
+            )}
           </Suspense>
           <footer className="page-footer">
             <span>
-              <span className="red-dot" /> Accel Telecom <span className="footer-divider">/</span>{' '}
-              Made for what’s next.
+              <span className="red-dot" /> Accel Telecom <span className="footer-divider">/</span>{' '}{t("Made for what’s next.")}</span>
+            <span>
+              {cloud
+                ? t("Cloud workspace · Fictional case products · No real purchases")
+                : t("Demo workspace · Fictional case products · No real purchases")}
             </span>
-            <span>Demo workspace · Fictional case products · No real purchases</span>
           </footer>
         </main>
       </div>
-      <nav className="mobile-bottom" aria-label="Mobile quick navigation">
+      <nav className="mobile-bottom" aria-label={t("Mobile quick navigation")}>
         {[
           { to: '/', label: 'Home', icon: LayoutDashboard },
           { to: '/plans', label: 'Plans', icon: BookOpen },
@@ -304,25 +334,25 @@ export default function App() {
         ].map(({ to, label, icon: Icon }) => (
           <NavLink end={to === '/'} to={to} key={to}>
             <Icon size={21} />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </NavLink>
         ))}
       </nav>
       {search && (
-        <Modal title="What are you looking for?" onClose={() => setSearch(false)}>
+        <Modal title={t("What are you looking for?")} onClose={() => setSearch(false)}>
           <div className="search-field large">
             <Search size={20} />
             <input
-              aria-label="Search plans and pages"
+              aria-label={t("Search plans and pages")}
               autoFocus
-              placeholder="Try broadband, invoices, or verification…"
+              placeholder={t("Try broadband, invoices, or verification…")}
               value={term}
               onChange={(e) => setTerm(e.target.value)}
             />
           </div>
           <div className="search-results">
             {navigation
-              .filter((x) => x.label.toLowerCase().includes(term.toLowerCase()))
+              .filter((x) => (t(x.label) + ' ' + x.label).toLocaleLowerCase(locale).includes(term.toLocaleLowerCase(locale)))
               .slice(0, 4)
               .map((x) => (
                 <button
@@ -333,7 +363,7 @@ export default function App() {
                   }}
                 >
                   <x.icon size={19} />
-                  <span>{x.label}</span>
+                  <span>{t(x.label)}</span>
                   <ArrowUpRight size={17} />
                 </button>
               ))}
@@ -360,49 +390,44 @@ export default function App() {
                   </button>
                 ))}
           </div>
-          <p className="muted small">Quick tip: press ⌘ K or Ctrl K from anywhere.</p>
+          <p className="muted small">{t("Quick tip: press ⌘ K or Ctrl K from anywhere.")}</p>
         </Modal>
       )}
       {bell && (
-        <Modal title="Your updates" onClose={() => setBell(false)}>
+        <Modal title={t("Your updates")} onClose={() => setBell(false)}>
           <div className="section-inline">
-            <span className="muted">{unread} unread updates</span>
+            <span className="muted">{unread}{t(" unread updates")}</span>
             <button
               className="text-button"
+              disabled={busy}
               onClick={() =>
-                setData((d) => ({
-                  ...d,
-                  notifications: d.notifications.map((x) => ({ ...x, read: true })),
-                }))
+                void run(() => markRead(data.notifications.filter((x) => !x.read).map((x) => x.id)))
               }
             >
-              <CheckCheck size={16} /> Mark all read
-            </button>
+              <CheckCheck size={16} />{t(" Mark all read")}</button>
           </div>
           <div className="notification-list">
             {data.notifications.map((x) => (
               <button
                 className={x.read ? '' : 'unread'}
                 key={x.id}
-                onClick={() => {
-                  setData((d) => ({
-                    ...d,
-                    notifications: d.notifications.map((n) =>
-                      n.id === x.id ? { ...n, read: true } : n,
-                    ),
-                  }));
-                  setBell(false);
-                  navigate(x.route);
-                }}
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await markRead([x.id]);
+                    setBell(false);
+                    navigate(x.route);
+                  })
+                }
               >
                 <span className="notification-icon">
                   <Bell size={18} />
                 </span>
                 <span>
                   <strong>{x.title}</strong>
-                  <p>{x.text}</p>
+                  <p>{t(x.text)}</p>
                   <small>
-                    {new Date(x.createdAt).toLocaleDateString('en-IN', {
+                    {new Date(x.createdAt).toLocaleDateString(locale, {
                       day: 'numeric',
                       month: 'short',
                     })}
@@ -415,8 +440,9 @@ export default function App() {
         </Modal>
       )}
       {advisor && (
-        <Modal title="Meet your next advantage" onClose={() => setAdvisor(false)}>
-          <VoiceAdvisor />
+        <Modal title={t("Meet your next advantage")} onClose={() => setAdvisor(false)}>
+          <ChatAdvisor onApplied={() => setAdvisor(false)} />
+          <VoiceAdvisor onApplied={() => setAdvisor(false)} />
         </Modal>
       )}
     </div>

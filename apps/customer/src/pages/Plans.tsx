@@ -1,3 +1,4 @@
+import { money, useI18n } from '../lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -18,7 +19,6 @@ import {
   addToCart,
   catalogue,
   eligibility,
-  money,
   productById,
   quote,
   removeFromCart,
@@ -29,6 +29,7 @@ import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 const categories = ['All plans', ...new Set(catalogue.map((x) => x.category))];
 export default function Plans() {
+  const { t, locale } = useI18n();
   const { data, setData } = useWorkspace(),
     notify = useNotify();
   const [params] = useSearchParams();
@@ -51,7 +52,7 @@ export default function Plans() {
             (category === 'All plans' || p.category === category) &&
             (!savedOnly || data.saved.includes(p.id)) &&
             (!eligibleOnly || !eligibility(p, data.profile).length) &&
-            (p.name + ' ' + p.description + ' ' + p.category)
+            (p.name + ' ' + p.description + ' ' + t(p.category))
               .toLowerCase()
               .includes(search.toLowerCase()),
         )
@@ -62,7 +63,7 @@ export default function Plans() {
               ? b.price - a.price
               : eligibility(a, data.profile).length - eligibility(b, data.profile).length,
         ),
-    [category, savedOnly, eligibleOnly, search, sort, data.profile, data.saved],
+    [category, savedOnly, eligibleOnly, search, sort, data.profile, data.saved, locale],
   );
   const total = quote(data.cart, data.profile);
   const add = (p: Product) => {
@@ -71,8 +72,8 @@ export default function Plans() {
       setData((d) => ({ ...d, cart: next }));
       notify(
         p.name +
-          ' added to your bundle' +
-          (next.length > data.cart.length + 1 ? ' with its required connection.' : '.'),
+          t(" added to your bundle") +
+          (next.length > data.cart.length + 1 ? t(" with its required connection.") : '.'),
       );
     } catch (e) {
       notify((e as Error).message);
@@ -82,41 +83,37 @@ export default function Plans() {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">POSSIBILITIES, MEET YOUR BUSINESS.</span>
-          <h1>
-            Find your next advantage<span className="heading-dot">.</span>
+          <span className="eyebrow">{t("POSSIBILITIES, MEET YOUR BUSINESS.")}</span>
+          <h1>{t("Find your next advantage")}<span className="heading-dot">.</span>
           </h1>
-          <p>Connectivity, productivity, protection. A little more of what you need.</p>
+          <p>{t("Connectivity, productivity, protection. A little more of what you need.")}</p>
         </div>
         <Link to="/discover" className="button primary">
-          <Sparkles size={17} /> Find my fit
-        </Link>
+          <Sparkles size={17} />{t(" Find my fit")}</Link>
       </div>
       <div className="plan-guidance">
         <span className="stat-icon red">
           <Sparkles size={21} />
         </span>
         <p>
-          <strong>A plan should fit your business. Not the other way around.</strong>
-          <br />
-          Showing plans for {data.profile.employees} people in {data.profile.city}.{' '}
-          <Link to="/discover">
-            Personalise your recommendations <ArrowUpRight size={13} />
+          <strong>{t("A plan should fit your business. Not the other way around.")}</strong>
+          <br />{t("Showing plans for ")}{data.profile.employees}{t(" people in ")}{data.profile.city}.{' '}
+          <Link to="/discover">{t("Personalise your recommendations ")}<ArrowUpRight size={13} />
           </Link>
         </p>
-        <span className="muted small">25 demo products</span>
+        <span className="muted small">{t("25 demo products")}</span>
       </div>
       <div className="filter-bar">
         <div className="search-field">
           <Search size={18} />
           <input
-            aria-label="Search plans"
-            placeholder="Search plans, features, or possibilities…"
+            aria-label={t("Search plans")}
+            placeholder={t("Search plans, features, or possibilities…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button aria-label="Clear search" onClick={() => setSearch('')}>
+            <button aria-label={t("Clear search")} onClick={() => setSearch('')}>
               <X size={16} />
             </button>
           )}
@@ -126,31 +123,29 @@ export default function Plans() {
           onClick={() => setSavedOnly((x) => !x)}
           aria-pressed={savedOnly}
         >
-          <Heart size={17} fill={savedOnly ? 'currentColor' : 'none'} /> Saved ({data.saved.length})
+          <Heart size={17} fill={savedOnly ? 'currentColor' : 'none'} />{t(" Saved (")}{data.saved.length})
         </button>
-        <select aria-label="Sort plans" value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="recommended">Recommended first</option>
-          <option value="low">Price: low to high</option>
-          <option value="high">Price: high to low</option>
+        <select aria-label={t("Sort plans")} value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="recommended">{t("Recommended first")}</option>
+          <option value="low">{t("Price: low to high")}</option>
+          <option value="high">{t("Price: high to low")}</option>
         </select>
       </div>
-      <div className="category-tabs" aria-label="Plan categories">
+      <div className="category-tabs" aria-label={t("Plan categories")}>
         {categories.map((c) => (
           <button key={c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>
-            {c}
+            {t(c)}
           </button>
         ))}
       </div>
       <div className="results-line">
-        <span>{plans.length} possibilities for your business</span>
+        <span>{plans.length}{t(" possibilities for your business")}</span>
         <label className="check-label">
           <input
             type="checkbox"
             checked={eligibleOnly}
             onChange={(e) => setEligibleOnly(e.target.checked)}
-          />{' '}
-          Only show plans I’m eligible for
-        </label>
+          />{' '}{t("Only show plans I’m eligible for")}</label>
       </div>
       <div className="plans-grid">
         {plans.map((p) => {
@@ -159,10 +154,10 @@ export default function Plans() {
           return (
             <article className={'plan-card ' + (selected ? 'in-bundle' : '')} key={p.id}>
               <div className="plan-top">
-                <span className="plan-category">{p.category}</span>
+                <span className="plan-category">{t(p.category)}</span>
                 <button
                   className={'icon-button heart ' + (data.saved.includes(p.id) ? 'saved' : '')}
-                  aria-label={(data.saved.includes(p.id) ? 'Unsave ' : 'Save ') + p.name}
+                  aria-label={(data.saved.includes(p.id) ? t("Unsave ") : t("Save ")) + p.name}
                   aria-pressed={data.saved.includes(p.id)}
                   onClick={() =>
                     setData((d) => ({
@@ -180,33 +175,29 @@ export default function Plans() {
                 <Wifi size={25} />
               </span>
               <h2>{p.name}</h2>
-              <p className="plan-description">{p.description}</p>
+              <p className="plan-description">{t(p.description)}</p>
               <div className="plan-price">
                 <strong>{money(p.price, false)}</strong>
-                <span>
-                  / month <small>{p.unit}</small>
+                <span>{t("/ month ")}<small>{p.unit}</small>
                 </span>
               </div>
               <ul className="plan-features">
                 <li>
                   <Check size={15} />
-                  {p.contract}-month contract
+                  {p.contract}{t("-month contract")}</li>
+                <li>
+                  <Check size={15} />
+                  {p.setup ? money(p.setup, false) + t(" one-time setup") : t("No setup charge")}
                 </li>
                 <li>
                   <Check size={15} />
-                  {p.setup ? money(p.setup, false) + ' one-time setup' : 'No setup charge'}
-                </li>
-                <li>
-                  <Check size={15} />
-                  {p.installDays}-day indicative activation
-                </li>
+                  {p.installDays}{t("-day indicative activation")}</li>
               </ul>
               {reasons.length ? (
                 <div className="eligibility-note">{reasons[0]}</div>
               ) : (
                 <span className="eligibility-ok">
-                  <ShieldCheck size={14} /> Fits your business profile
-                </span>
+                  <ShieldCheck size={14} />{t(" Fits your business profile")}</span>
               )}
               <div className="plan-card-actions">
                 <button
@@ -220,17 +211,13 @@ export default function Plans() {
                 >
                   {selected ? (
                     <>
-                      <Check size={16} /> In your bundle
-                    </>
+                      <Check size={16} />{t(" In your bundle")}</>
                   ) : (
-                    <>
-                      Add to bundle <ArrowRight size={16} />
+                    <>{t("Add to bundle ")}<ArrowRight size={16} />
                     </>
                   )}
                 </button>
-                <button className="text-button" onClick={() => setDetail(p)}>
-                  Details
-                </button>
+                <button className="text-button" onClick={() => setDetail(p)}>{t("Details")}</button>
               </div>
               <label className="compare-check">
                 <input
@@ -245,9 +232,7 @@ export default function Plans() {
                       e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id),
                     );
                   }}
-                />{' '}
-                Compare plan
-              </label>
+                />{' '}{t("Compare plan")}</label>
             </article>
           );
         })}
@@ -255,8 +240,8 @@ export default function Plans() {
       {!plans.length && (
         <div className="empty-state">
           <Search size={38} />
-          <h2>No plans found just yet.</h2>
-          <p>Try another search or clear your filters.</p>
+          <h2>{t("No plans found just yet.")}</h2>
+          <p>{t("Try another search or clear your filters.")}</p>
           <button
             className="button secondary"
             onClick={() => {
@@ -265,15 +250,10 @@ export default function Plans() {
               setSavedOnly(false);
               setEligibleOnly(false);
             }}
-          >
-            Clear filters
-          </button>
+          >{t("Clear filters")}</button>
         </div>
       )}
-      <p className="footnote">
-        Fictional case catalogue. Prices exclude illustrative demo tax. Availability and activation
-        times are indicative for this prototype.
-      </p>
+      <p className="footnote">{t("Fictional case catalogue. Prices exclude illustrative demo tax. Availability and activation times are indicative for this prototype.")}</p>
       {(data.cart.length > 0 || compare.length > 0) && (
         <div className="bundle-dock">
           <div>
@@ -282,20 +262,17 @@ export default function Plans() {
             </span>
             <span>
               <strong>
-                {data.cart.length} service{data.cart.length !== 1 ? 's' : ''} in your bundle
-              </strong>
-              <small>{money(total.monthly)} / month before demo tax</small>
+                {data.cart.length}{t(" service")}{data.cart.length !== 1 ? t("s") : ''}{t(" in your bundle")}</strong>
+              <small>{money(total.monthly)}{t(" / month before demo tax")}</small>
             </span>
           </div>
           <div className="dock-actions">
             {compare.length > 0 && (
-              <button className="button secondary" onClick={() => setShowCompare(true)}>
-                Compare ({compare.length})
+              <button className="button secondary" onClick={() => setShowCompare(true)}>{t("Compare (")}{compare.length})
               </button>
             )}
             {data.cart.length > 0 && (
-              <Link className="button primary" to="/checkout">
-                Review bundle <ArrowRight size={17} />
+              <Link className="button primary" to="/checkout">{t("Review bundle ")}<ArrowRight size={17} />
               </Link>
             )}
           </div>
@@ -303,39 +280,30 @@ export default function Plans() {
       )}
       {detail && (
         <Modal title={detail.name} onClose={() => setDetail(null)}>
-          <span className="eyebrow">{detail.category}</span>
-          <p className="lead">{detail.description}</p>
+          <span className="eyebrow">{t(detail.category)}</span>
+          <p className="lead">{t(detail.description)}</p>
           <div className="detail-grid">
-            <span>
-              Monthly price
-              <strong>
+            <span>{t("Monthly price")}<strong>
                 {money(detail.price)} {detail.unit}
               </strong>
             </span>
-            <span>
-              Setup fee<strong>{money(detail.setup)}</strong>
+            <span>{t("Setup fee")}<strong>{money(detail.setup)}</strong>
             </span>
-            <span>
-              Contract<strong>{detail.contract} months</strong>
+            <span>{t("Contract")}<strong>{detail.contract}{t(" months")}</strong>
             </span>
-            <span>
-              Indicative activation<strong>{detail.installDays} days</strong>
+            <span>{t("Indicative activation")}<strong>{detail.installDays}{t(" days")}</strong>
             </span>
           </div>
-          <h3>What you’ll need</h3>
+          <h3>{t("What you’ll need")}</h3>
           <ul className="bullet-list">
-            <li>
-              At least {detail.minEmployees} employee{detail.minEmployees > 1 ? 's' : ''} and{' '}
-              {detail.minSites} location{detail.minSites > 1 ? 's' : ''}
+            <li>{t("At least ")}{detail.minEmployees}{t(" employee")}{detail.minEmployees > 1 ? t("s") : ''}{t(" and")}{' '}
+              {detail.minSites}{t(" location")}{detail.minSites > 1 ? t("s") : ''}
             </li>
-            <li>Tier {detail.tiers.join(' or ')} city</li>
-            {detail.requiresGstin && <li>GST registration</li>}
+            <li>{t("Tier ")}{detail.tiers.join(' or ')}{t(" city")}</li>
+            {detail.requiresGstin && <li>{t("GST registration")}</li>}
             {detail.dependencies.length > 0 && (
-              <li>
-                One compatible connection:{' '}
-                {detail.dependencies.map((id) => productById(id)?.name).join(', ')}. We’ll add a
-                suitable one if needed.
-              </li>
+              <li>{t("One compatible connection:")}{' '}
+                {detail.dependencies.map((id) => productById(id)?.name).join(', ')}{t(". We’ll add a suitable one if needed.")}</li>
             )}
           </ul>
           <button
@@ -345,44 +313,41 @@ export default function Plans() {
               add(detail);
               setDetail(null);
             }}
-          >
-            Add to my bundle <ArrowRight size={16} />
+          >{t("Add to my bundle ")}<ArrowRight size={16} />
           </button>
         </Modal>
       )}
       {showCompare && (
-        <Modal title="Side by side. A clearer choice." onClose={() => setShowCompare(false)} wide>
+        <Modal title={t("Side by side. A clearer choice.")} onClose={() => setShowCompare(false)} wide>
           <div className="compare-grid">
             {compare.map((id) => {
               const p = productById(id)!;
               return (
                 <div className="compare-card" key={id}>
-                  <span className="eyebrow">{p.category}</span>
+                  <span className="eyebrow">{t(p.category)}</span>
                   <h3>{p.name}</h3>
                   <strong className="compare-price">
                     {money(p.price, false)}
-                    <small>/mo</small>
+                    <small>{t("/mo")}</small>
                   </strong>
-                  <p>{p.description}</p>
+                  <p>{t(p.description)}</p>
                   <dl>
-                    <dt>Unit</dt>
+                    <dt>{t("Unit")}</dt>
                     <dd>{p.unit}</dd>
-                    <dt>Setup</dt>
+                    <dt>{t("Setup")}</dt>
                     <dd>{money(p.setup)}</dd>
-                    <dt>Contract</dt>
-                    <dd>{p.contract} months</dd>
-                    <dt>Activation</dt>
-                    <dd>About {p.installDays} days</dd>
-                    <dt>GST required</dt>
-                    <dd>{p.requiresGstin ? 'Yes' : 'No'}</dd>
+                    <dt>{t("Contract")}</dt>
+                    <dd>{p.contract}{t(" months")}</dd>
+                    <dt>{t("Activation")}</dt>
+                    <dd>{t("About ")}{p.installDays}{t(" days")}</dd>
+                    <dt>{t("GST required")}</dt>
+                    <dd>{p.requiresGstin ? t("Yes") : t("No")}</dd>
                   </dl>
                   <button
                     className="button primary full"
                     disabled={Boolean(eligibility(p, data.profile).length)}
                     onClick={() => add(p)}
-                  >
-                    Add to bundle
-                  </button>
+                  >{t("Add to bundle")}</button>
                 </div>
               );
             })}

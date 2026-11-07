@@ -1,0 +1,206 @@
+{
+  "date" : "2026-07-15",
+  "applicants" : [ {
+    "applicant" : "K01",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_NOT_ACTIVE" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ "UDYAM_NOT_FOUND_OR_UNREADABLE" ]
+    } ],
+    "issues" : [ ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K02",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "unknown",
+      "issues" : [ "UNREADABLE_OR_UNSUPPORTED_DOCUMENT" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K03",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_FORMAT_OR_CHECKSUM", "GSTIN_NOT_FOUND" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K04",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "unknown",
+      "issues" : [ "UNREADABLE_OR_UNSUPPORTED_DOCUMENT" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K05",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    } ],
+    "issues" : [ ],
+    "status" : "ready"
+  }, {
+    "applicant" : "K06",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_FORMAT_OR_CHECKSUM", "GSTIN_NOT_FOUND" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K07",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_FORMAT_OR_CHECKSUM", "GSTIN_NOT_FOUND" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K08",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_FORMAT_OR_CHECKSUM", "GSTIN_NOT_FOUND" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K09",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ ],
+    "status" : "ready"
+  }, {
+    "applicant" : "K10",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ "GSTIN_FORMAT_OR_CHECKSUM", "GSTIN_NOT_FOUND" ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ "ACTIVE_GSTIN_REQUIRED_FOR_PROFILE" ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K11",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ "ADDRESS_PROOF_DATE_OUTSIDE_90_DAYS" ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ ],
+    "status" : "needs_review"
+  }, {
+    "applicant" : "K12",
+    "documents" : [ {
+      "kind" : "address",
+      "issues" : [ ]
+    }, {
+      "kind" : "gst",
+      "issues" : [ ]
+    }, {
+      "kind" : "signatory",
+      "issues" : [ ]
+    }, {
+      "kind" : "udyam",
+      "issues" : [ ]
+    } ],
+    "issues" : [ ],
+    "status" : "ready"
+  } ],
+  "images" : 47
+}
