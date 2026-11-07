@@ -135,14 +135,14 @@ export default function App() {
         <Link to="/" className="brand-link">
           <Brand />
         </Link>
-        <div className="workspace-switch">
+        <Link to="/account" className="workspace-switch" title={t("Open business profile")}>
           <div className="business-avatar">{data.profile.business.slice(0, 1) || t("N")}</div>
           <span>
             <strong>{data.profile.business || t("My business")}</strong>
             <small>{t("Business workspace")}</small>
           </span>
-          <ChevronDown size={16} />
-        </div>
+          <ArrowRight size={16} />
+        </Link>
         <span className="nav-caption">{t("YOUR WORKSPACE")}</span>
         <nav aria-label={t("Main navigation")}>
           {navigation.map(({ to, label, icon: Icon }) => (
