@@ -5,6 +5,13 @@ test('business priority choices have compact controls and spaced touch targets',
   for (const input of await group.getByRole('checkbox').all()) {
     const box=await input.boundingBox();expect(box!.width).toBe(18);expect(box!.height).toBe(18);
   }
+  const gst = page.getByRole('checkbox',{name:'GST registered'}).locator('..');
+  const gstBox = await gst.boundingBox();
+  const prioritiesBox = await group.boundingBox();
+  expect(prioritiesBox!.y - gstBox!.y - gstBox!.height).toBeGreaterThanOrEqual(19);
+  const panels = page.locator('.account-layout .panel');
+  const paddings = await panels.evaluateAll(elements => elements.map(el => getComputedStyle(el).padding));
+  expect(new Set(paddings).size).toBe(1);
   const security=group.getByRole('checkbox',{name:'security',exact:true});
   await security.check();await expect(security).toBeChecked();
   await group.scrollIntoViewIfNeeded();

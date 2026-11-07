@@ -45,6 +45,8 @@ export default function Verification() {
   const [actionError, setActionError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const blocked = busy || cooldown > 0;
+  const needsReview = assessment !== null && assessment.status !== 'ready';
+  const documentRevision = JSON.stringify(k.documents.map((doc) => [doc.id, doc.uploadedAt]));
   useEffect(() => {
     if (!cooldown) return;
     const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
@@ -52,7 +54,7 @@ export default function Verification() {
   }, [cooldown]);
   useEffect(() => {
     setAssessment(null);
-  }, [k.documents, k.consent]);
+  }, [documentRevision]);
   function report(error: unknown) {
     setActionError((error as Error).message);
     if (error instanceof ApiError && error.status === 429)
@@ -61,7 +63,7 @@ export default function Verification() {
   function files(list: FileList | null) {
     if (!list) return;
     const selected = [...list];
-    if (blocked) return;
+    if (blocked || k.provider !== 'digio') return;
     void run(async () => {
       setActionError('');
       try {
@@ -80,6 +82,8 @@ export default function Verification() {
     });
   }
   function verify() {
+    if (blocked || needsReview || k.provider !== 'digio' || !k.consent || k.documents.length < 2)
+      return;
     void run(async () => {
       setActionError('');
       try {
@@ -121,52 +125,54 @@ export default function Verification() {
           )}
         </p>
       )}
-      {cloud && reservations.some((doc) => doc.status !== 'uploaded') && (
-        <section className="panel">
-          <h2>{t('Pending uploads')}</h2>
-          <p>
-            {t(
-              'Remove an abandoned reservation to free a document slot, then select the file again.',
-            )}
-          </p>
-          {reservations
-            .filter((doc) => doc.status !== 'uploaded')
-            .map((doc) => (
-              <div className="section-inline" key={doc.id}>
-                <span>
-                  {doc.name} · {t(doc.status)}
-                </span>
-                {doc.status === 'pending' && (
+      {cloud &&
+        k.provider !== 'digilocker' &&
+        reservations.some((doc) => doc.status !== 'uploaded') && (
+          <section className="panel">
+            <h2>{t('Pending uploads')}</h2>
+            <p>
+              {t(
+                'Remove an abandoned reservation to free a document slot, then select the file again.',
+              )}
+            </p>
+            {reservations
+              .filter((doc) => doc.status !== 'uploaded')
+              .map((doc) => (
+                <div className="section-inline" key={doc.id}>
+                  <span>
+                    {doc.name} · {t(doc.status)}
+                  </span>
+                  {doc.status === 'pending' && (
+                    <button
+                      className="text-button"
+                      disabled={blocked}
+                      onClick={() =>
+                        void run(async () => {
+                          setActionError('');
+                          try {
+                            await completeDocument(doc.id);
+                            notify(t('Upload completed. Review consent to continue.'));
+                          } catch (error) {
+                            report(error);
+                            throw error;
+                          }
+                        })
+                      }
+                    >
+                      {t('Retry upload completion')}
+                    </button>
+                  )}
                   <button
                     className="text-button"
                     disabled={blocked}
-                    onClick={() =>
-                      void run(async () => {
-                        setActionError('');
-                        try {
-                          await completeDocument(doc.id);
-                          notify(t('Upload completed. Review consent to continue.'));
-                        } catch (error) {
-                          report(error);
-                          throw error;
-                        }
-                      })
-                    }
+                    onClick={() => void run(() => removeDocument(doc.id))}
                   >
-                    {t('Retry upload completion')}
+                    {t('Remove pending upload')}
                   </button>
-                )}
-                <button
-                  className="text-button"
-                  disabled={blocked}
-                  onClick={() => void run(() => removeDocument(doc.id))}
-                >
-                  {t('Remove pending upload')}
-                </button>
-              </div>
-            ))}
-        </section>
-      )}
+                </div>
+              ))}
+          </section>
+        )}
       <div className="page-heading">
         <div>
           <span className="eyebrow">{t('A SIMPLER START.')}</span>
@@ -257,101 +263,130 @@ export default function Verification() {
                 ))}
               </div>
             </section>
-            <section className="panel">
-              <div className="section-heading">
-                <div>
-                  <span className="step-label">02</span>
-                  <h2>{t('Your document checklist')}</h2>
-                  <p>{t('Add business registration and address/signatory document details.')}</p>
+            {k.provider === 'digilocker' ? (
+              <section className="panel digilocker-connect">
+                <div className="section-heading">
+                  <div>
+                    <span className="step-label">02</span>
+                    <h2>{t('Connect DigiLocker')}</h2>
+                    <p>{t('Demo only — DigiLocker connection is not available yet.')}</p>
+                  </div>
+                  <Landmark size={28} aria-hidden="true" />
                 </div>
+                <p className="muted" id="digilocker-demo-note">
+                  {t(
+                    'When connected, documents will be retrieved from DigiLocker with your consent. This demo cannot connect or retrieve documents yet.',
+                  )}
+                </p>
                 <button
-                  className="text-button"
-                  hidden={cloud}
-                  onClick={() => {
-                    setData((d) => ({
-                      ...d,
-                      kyc: {
-                        ...d.kyc,
-                        documents: [
-                          {
-                            id: makeId('DOC'),
-                            name: 'Sample_business_registration.pdf',
-                            size: 84200,
-                            type: 'application/pdf',
-                            uploadedAt: new Date().toISOString(),
-                          },
-                          {
-                            id: makeId('DOC'),
-                            name: 'Sample_business_address.pdf',
-                            size: 62300,
-                            type: 'application/pdf',
-                            uploadedAt: new Date().toISOString(),
-                          },
-                        ],
-                      },
-                    }));
-                    notify('Two fictional sample document details added.');
+                  className="button secondary"
+                  disabled
+                  aria-describedby="digilocker-demo-note"
+                >
+                  {t('Connect DigiLocker (unavailable in demo)')}
+                </button>
+                <p className="muted small">
+                  {t('Choose Digio above to try the manual document-upload demo.')}
+                </p>
+              </section>
+            ) : (
+              <section className="panel">
+                <div className="section-heading">
+                  <div>
+                    <span className="step-label">02</span>
+                    <h2>{t('Your document checklist')}</h2>
+                    <p>{t('Add business registration and address/signatory document details.')}</p>
+                  </div>
+                  <button
+                    className="text-button"
+                    hidden={cloud}
+                    disabled={blocked || !k.provider}
+                    onClick={() => {
+                      setData((d) => ({
+                        ...d,
+                        kyc: {
+                          ...d.kyc,
+                          documents: [
+                            {
+                              id: makeId('DOC'),
+                              name: 'Sample_business_registration.pdf',
+                              size: 84200,
+                              type: 'application/pdf',
+                              uploadedAt: new Date().toISOString(),
+                            },
+                            {
+                              id: makeId('DOC'),
+                              name: 'Sample_business_address.pdf',
+                              size: 62300,
+                              type: 'application/pdf',
+                              uploadedAt: new Date().toISOString(),
+                            },
+                          ],
+                        },
+                      }));
+                      notify('Two fictional sample document details added.');
+                    }}
+                  >
+                    {t('Use sample documents')}
+                  </button>
+                </div>
+                <input
+                  className="visually-hidden"
+                  ref={input}
+                  disabled={blocked || !k.provider}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  multiple
+                  aria-label={t('Add verification documents')}
+                  onChange={(e) => files(e.target.files)}
+                />
+                <button
+                  className="upload-zone"
+                  disabled={blocked || !k.provider}
+                  onClick={() => input.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    files(e.dataTransfer.files);
                   }}
                 >
-                  {t('Use sample documents')}
+                  <UploadCloud size={30} />
+                  <strong>{t('Drop your files here, or browse')}</strong>
+                  <span>{t('PDF, JPG or PNG · Up to 10 MB each')}</span>
                 </button>
-              </div>
-              <input
-                className="visually-hidden"
-                ref={input}
-                disabled={blocked}
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                multiple
-                aria-label={t('Add verification documents')}
-                onChange={(e) => files(e.target.files)}
-              />
-              <button
-                className="upload-zone"
-                disabled={blocked}
-                onClick={() => input.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  files(e.dataTransfer.files);
-                }}
-              >
-                <UploadCloud size={30} />
-                <strong>{t('Drop your files here, or browse')}</strong>
-                <span>{t('PDF, JPG or PNG · Up to 10 MB each')}</span>
-              </button>
-              <p className="muted small">
-                {t(
-                  cloud
-                    ? 'Cloud mode uploads private file contents. Delete them here when no longer needed.'
-                    : 'Demo mode saves file names and sizes on this device. File contents are not stored or sent to a provider.',
-                )}
-              </p>
-              <div className="document-list">
-                {k.documents.map((d) => (
-                  <div key={d.id}>
-                    <span className="stat-icon blue">
-                      <FileText size={19} />
-                    </span>
-                    <span>
-                      <strong>{d.name}</strong>
-                      <small>
-                        {Math.max(1, Math.round(d.size / 1024))}
-                        {t(cloud ? ' KB · Uploaded privately' : ' KB · Demo details saved')}
-                      </small>
-                    </span>
-                    <button
-                      className="icon-button"
-                      aria-label={t('Remove ') + d.name}
-                      disabled={blocked}
-                      onClick={() => void run(() => removeDocument(d.id))}
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
+                <p className="muted small">
+                  {t(
+                    cloud
+                      ? 'Cloud mode uploads private file contents. Delete them here when no longer needed.'
+                      : 'Demo mode saves file names and sizes on this device. File contents are not stored or sent to a provider.',
+                  )}
+                </p>
+                <div className="document-list">
+                  {k.documents.map((d) => (
+                    <div key={d.id}>
+                      <span className="stat-icon blue">
+                        <FileText size={19} />
+                      </span>
+                      <span>
+                        <strong>{d.name}</strong>
+                        <small>
+                          {Math.max(1, Math.round(d.size / 1024))}
+                          {t(cloud ? ' KB · Uploaded privately' : ' KB · Demo details saved')}
+                        </small>
+                      </span>
+                      <button
+                        className="icon-button"
+                        aria-label={t('Remove ') + d.name}
+                        disabled={blocked}
+                        onClick={() => void run(() => removeDocument(d.id))}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
             <section className="panel">
               <span className="step-label">03</span>
               <h2>{t('Your consent. Your control.')}</h2>
@@ -359,7 +394,7 @@ export default function Verification() {
                 <input
                   type="checkbox"
                   checked={consentDraft ?? k.consent}
-                  disabled={blocked || !k.provider}
+                  disabled={blocked || !k.provider || k.provider === 'digilocker'}
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setConsentDraft(checked);
@@ -405,9 +440,20 @@ export default function Verification() {
                   </ul>
                 </div>
               )}
+              {needsReview && (
+                <p className="muted small">
+                  {t('Replace or remove the documents that need review before trying again.')}
+                </p>
+              )}
               <button
                 className="button primary"
-                disabled={blocked || !k.provider || !k.consent || k.documents.length < 2}
+                disabled={
+                  blocked ||
+                  needsReview ||
+                  k.provider !== 'digio' ||
+                  !k.consent ||
+                  k.documents.length < 2
+                }
                 onClick={verify}
               >
                 {t('Complete demo verification ')}

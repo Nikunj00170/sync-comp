@@ -764,5 +764,14 @@
   "Retry upload completion": "अपलोड पूर्ण करण्यासाठी पुन्हा प्रयत्न करा",
   "Too many requests. Please wait a moment and try again.": "खूप विनंत्या आहेत. थोडा वेळ थांबून पुन्हा प्रयत्न करा.",
   "Account renewal is temporarily unavailable. Please try again shortly.": "खाते नूतनीकरण तात्पुरते उपलब्ध नाही. थोड्या वेळाने पुन्हा प्रयत्न करा.",
-  "This demo receipt is saved only on this device and does not settle a real bill.": "ही डेमो पावती फक्त या डिव्हाइसवर जतन होते आणि वास्तविक बिल भरत नाही."
+  "This demo receipt is saved only on this device and does not settle a real bill.": "ही डेमो पावती फक्त या डिव्हाइसवर जतन होते आणि वास्तविक बिल भरत नाही.",
+  "Your account connection is working.": "तुमच्या खात्याची जोडणी कार्यरत आहे.",
+  "Your business details will appear here after you sign in.": "साइन इन केल्यानंतर तुमच्या व्यवसायाची माहिती येथे दिसेल.",
+  "Sign in securely with Cognito to access your business account.": "तुमच्या व्यवसाय खात्यात प्रवेश करण्यासाठी Cognito सह सुरक्षितपणे साइन इन करा.",
+  "Replace or remove the documents that need review before trying again.": "पुन्हा प्रयत्न करण्यापूर्वी पुनरावलोकन आवश्यक असलेली कागदपत्रे बदला किंवा काढा.",
+  "Connect DigiLocker": "DigiLocker शी जोडा",
+  "Demo only — DigiLocker connection is not available yet.": "केवळ डेमो — DigiLocker जोडणी अद्याप उपलब्ध नाही.",
+  "When connected, documents will be retrieved from DigiLocker with your consent. This demo cannot connect or retrieve documents yet.": "जोडणी झाल्यावर तुमच्या संमतीने DigiLocker मधून कागदपत्रे मिळवली जातील. हा डेमो अद्याप जोडणी करू शकत नाही किंवा कागदपत्रे मिळवू शकत नाही.",
+  "Connect DigiLocker (unavailable in demo)": "DigiLocker शी जोडा (डेमोमध्ये उपलब्ध नाही)",
+  "Choose Digio above to try the manual document-upload demo.": "कागदपत्रे अपलोड करण्याचा डेमो वापरण्यासाठी वर Digio निवडा."
 }

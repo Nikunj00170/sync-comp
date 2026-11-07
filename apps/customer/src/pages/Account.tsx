@@ -38,6 +38,7 @@ export default function Account() {
     [confirm, setConfirm] = useState(false),
     [error, setError] = useState(''),
     [connection, setConnection] = useState(''),
+    [connectionSucceeded, setConnectionSucceeded] = useState(false),
     [busy, setBusy] = useState(false);
   useEffect(() => setProfile({ ...data.profile }), [data.profile]);
   const action = useAction();
@@ -62,7 +63,10 @@ export default function Account() {
     try {
       setBusy(true);
       setConnection('');
-      await refresh();
+      setConnectionSucceeded(false);
+      await refresh({ reportErrors: true });
+      setConnectionSucceeded(true);
+      setConnection('Your account connection is working.');
     } catch (e) {
       setConnection((e as Error).message);
     } finally {
@@ -82,6 +86,10 @@ export default function Account() {
       </div>
       <div className="account-layout">
         <div>
+          {cloud && !authenticated && accountStatus !== 'loading' && <section className="panel account-signin-prompt">
+            <h2>{t('Sign in to load your account.')}</h2>
+            <p className="muted">{t('Your business details will appear here after you sign in.')}</p>
+          </section>}
           <form className="panel" onSubmit={save} hidden={cloud && accountStatus !== 'ready'}>
             <div className="section-heading">
               <div>
@@ -287,7 +295,7 @@ export default function Account() {
               {authenticated
                 ? t("Your business profile and account settings are available here.")
                 : cloud
-                ? t("Sign in to load your customer records. Failed requests never fall back to demo data.")
+                ? t('Sign in securely with Cognito to access your business account.')
                 : t("This build is using the local demo. Configure VITE_API_BASE_URL and Cognito to use your customer account.")}
             </p>
             {!authenticated && <button
@@ -307,17 +315,15 @@ export default function Account() {
               className="text-button full center"
               onClick={() => signOut().catch((e) => notify(e.message))}
             >{t("Sign out of live account")}</button>}
-            {cloud && accountStatus !== 'ready' && (
-              <p className="connection-message" role="status">
+            {cloud && (accountStatus === 'loading' || accountStatus === 'error') && (
+              <p className={accountStatus === 'loading' ? "muted" : "connection-message"} role="status">
                 {accountStatus === 'loading'
                     ? t("Loading account…")
-                    : accountStatus === 'error'
-                      ? t(connectionError || 'Your workspace could not be loaded')
-                      : t("Sign in to load your account.")}
+                    : t(connectionError || 'Your workspace could not be loaded')}
               </p>
             )}
             {connection && (
-              <p className="connection-message" role="status">
+              <p className={connectionSucceeded ? "connection-message success" : "connection-message"} role="status">
                 {t(connection)}
               </p>
             )}

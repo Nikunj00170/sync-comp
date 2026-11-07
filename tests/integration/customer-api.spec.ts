@@ -66,6 +66,11 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeDisabled();
   await page.getByRole('link', { name: 'Complete verification' }).click();
   await page.getByRole('button', { name: /^DigiLocker/ }).click();
+  await expect(page.getByRole('heading',{name:'Connect DigiLocker',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Connect DigiLocker (unavailable in demo)'})).toBeDisabled();
+  await expect(page.getByLabel('Add verification documents')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
+  await page.getByRole('button', { name: /^Digio/ }).click();
   await expect(
     page.getByRole('checkbox', { name: /I consent to OCR extraction/ }),
   ).toBeEnabled();
@@ -215,7 +220,7 @@ test('supplied cancelled-registration documents require review and revoked conse
   expect((await context.request.put(api + '/v1/me',{headers,data:profile})).status()).toBe(200);
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   await page.goto('/#/verification');
-  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  await page.getByRole('button',{name:/^Digio/}).click();
   // Provider selection persists asynchronously; wait before starting the next action.
   await expect(page.getByRole('checkbox',{name:/I consent to OCR extraction/})).toBeEnabled();
   await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K01_gst_certificate.png','case_source/kyc_documents/K01_address_proof.png','case_source/kyc_documents/K01_signatory_id.png']);
@@ -224,12 +229,19 @@ test('supplied cancelled-registration documents require review and revoked conse
   await consent.check();
   await page.getByRole('button',{name:'Complete demo verification'}).click();
   await expect(page.getByText('Documents need review',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
   await expect(page.getByText(/GST registration is cancelled or suspended/)).toBeVisible();
   expect((await (await context.request.get(api + '/v1/kyc',{headers})).json()).status).toBe('pending');
   await consent.uncheck();
   await expect(consent).not.toBeChecked();
+  await expect(page.getByText('Documents need review',{exact:true})).toBeVisible();
+  await consent.check();
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
+  await consent.uncheck();
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   expect((await context.request.post(api + '/v1/registries/lookup',{headers,data:{kind:'gstin',identifier:'37IHKXV5167L1ZS'}})).status()).toBe(409);
+  await page.getByRole('button',{name:'Remove K01_signatory_id.png',exact:true}).click();
+  await expect(page.getByText('Documents need review',{exact:true})).toHaveCount(0);
 });
 
 
@@ -245,12 +257,23 @@ test('live account actions follow Cognito session even when account API fails', 
   await page.reload();
   await expect(panel.getByText('Account temporarily unavailable.',{exact:true})).toBeVisible();
   await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  await page.unroute('**/v1/me');
+  const check = panel.getByRole('button',{name:'Check account connection'});
+  await check.click();
+  await expect(panel.getByRole('status')).toHaveText('Your account connection is working.');
+  await expect(page.getByLabel('Business name',{exact:true})).toBeVisible();
+  await page.route('**/v1/me',route=>route.fulfill({status:503,json:{error:{message:'Account temporarily unavailable.'}}}));
+  await check.click();
+  await expect(panel.getByRole('status')).toHaveText('Account temporarily unavailable.');
+  await expect(panel.getByText('Your account connection is working.')).toHaveCount(0);
   const signedOut = await browser.newContext();
   const signedOutPage = await signedOut.newPage();
   await signedOutPage.goto('http://127.0.0.1:5174/#/account');
   const signedOutPanel = signedOutPage.locator('.account-connection');
   await expect(signedOutPanel.getByRole('button',{name:'Sign in with Cognito'})).toBeVisible();
   await expect(signedOutPanel.getByRole('button',{name:'Sign out of live account'})).toHaveCount(0);
+  await expect(signedOutPanel.locator('.connection-message')).toHaveCount(0);
+  await expect(signedOutPage.getByRole('heading',{name:'Sign in to load your account.'})).toBeVisible();
   await signedOut.close();
 });
 
@@ -262,7 +285,7 @@ test('KYC completion 429 preserves login, resumes stored bytes and avoids accoun
   expect((await context.request.put(api+'/v1/me',{headers,data:profile})).status()).toBe(200);
   let profileReads=0;page.on('request',request=>{if(request.url()===api+'/v1/me' && request.method()==='GET') profileReads++;});
   await page.goto('/#/verification');
-  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  await page.getByRole('button',{name:/^Digio/}).click();
   const consent=page.getByRole('checkbox',{name:/I consent to OCR extraction/});await expect(consent).toBeEnabled();
   const before=profileReads;
   let throttle=true;
