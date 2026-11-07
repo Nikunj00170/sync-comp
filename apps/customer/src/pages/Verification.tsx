@@ -45,6 +45,8 @@ export default function Verification() {
   const [actionError, setActionError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const blocked = busy || cooldown > 0;
+  const needsReview = assessment !== null && assessment.status !== 'ready';
+  const documentRevision = JSON.stringify(k.documents.map(doc => [doc.id, doc.uploadedAt]));
   useEffect(() => {
     if (!cooldown) return;
     const timer = setTimeout(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
@@ -52,7 +54,7 @@ export default function Verification() {
   }, [cooldown]);
   useEffect(() => {
     setAssessment(null);
-  }, [k.documents, k.consent]);
+  }, [documentRevision]);
   function report(error: unknown) {
     setActionError((error as Error).message);
     if (error instanceof ApiError && error.status === 429)
@@ -405,9 +407,10 @@ export default function Verification() {
                   </ul>
                 </div>
               )}
+              {needsReview && <p className="muted small">{t('Replace or remove the documents that need review before trying again.')}</p>}
               <button
                 className="button primary"
-                disabled={blocked || !k.provider || !k.consent || k.documents.length < 2}
+                disabled={blocked || needsReview || !k.provider || !k.consent || k.documents.length < 2}
                 onClick={verify}
               >
                 {t('Complete demo verification ')}

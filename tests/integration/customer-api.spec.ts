@@ -224,12 +224,19 @@ test('supplied cancelled-registration documents require review and revoked conse
   await consent.check();
   await page.getByRole('button',{name:'Complete demo verification'}).click();
   await expect(page.getByText('Documents need review',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
   await expect(page.getByText(/GST registration is cancelled or suspended/)).toBeVisible();
   expect((await (await context.request.get(api + '/v1/kyc',{headers})).json()).status).toBe('pending');
   await consent.uncheck();
   await expect(consent).not.toBeChecked();
+  await expect(page.getByText('Documents need review',{exact:true})).toBeVisible();
+  await consent.check();
+  await expect(page.getByRole('button',{name:'Complete demo verification'})).toBeDisabled();
+  await consent.uncheck();
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   expect((await context.request.post(api + '/v1/registries/lookup',{headers,data:{kind:'gstin',identifier:'37IHKXV5167L1ZS'}})).status()).toBe(409);
+  await page.getByRole('button',{name:'Remove K01_signatory_id.png',exact:true}).click();
+  await expect(page.getByText('Documents need review',{exact:true})).toHaveCount(0);
 });
 
 

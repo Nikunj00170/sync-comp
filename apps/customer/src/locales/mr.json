@@ -767,5 +767,6 @@
   "This demo receipt is saved only on this device and does not settle a real bill.": "ही डेमो पावती फक्त या डिव्हाइसवर जतन होते आणि वास्तविक बिल भरत नाही.",
   "Your account connection is working.": "तुमच्या खात्याची जोडणी कार्यरत आहे.",
   "Your business details will appear here after you sign in.": "साइन इन केल्यानंतर तुमच्या व्यवसायाची माहिती येथे दिसेल.",
-  "Sign in securely with Cognito to access your business account.": "तुमच्या व्यवसाय खात्यात प्रवेश करण्यासाठी Cognito सह सुरक्षितपणे साइन इन करा."
+  "Sign in securely with Cognito to access your business account.": "तुमच्या व्यवसाय खात्यात प्रवेश करण्यासाठी Cognito सह सुरक्षितपणे साइन इन करा.",
+  "Replace or remove the documents that need review before trying again.": "पुन्हा प्रयत्न करण्यापूर्वी पुनरावलोकन आवश्यक असलेली कागदपत्रे बदला किंवा काढा."
 }
