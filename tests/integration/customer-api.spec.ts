@@ -212,3 +212,24 @@ test('supplied cancelled-registration documents require review and revoked conse
   expect((await context.request.post(api + '/v1/kyc/assessment',{headers})).status()).toBe(409);
   expect((await context.request.post(api + '/v1/registries/lookup',{headers,data:{kind:'gstin',identifier:'37IHKXV5167L1ZS'}})).status()).toBe(409);
 });
+
+
+test('live account actions follow Cognito session even when account API fails', async ({page, context, browser}, info) => {
+  await login(context, info.project.name === 'desktop' ? 12 : 13);
+  await page.goto('/#/account');
+  await expect(page.getByLabel('Business name', {exact:true})).toBeVisible();
+  const panel = page.locator('.account-connection');
+  await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Sign out of live account'})).toBeVisible();
+  await page.route('**/v1/me',route=>route.fulfill({status:503,json:{error:{message:'Account temporarily unavailable.'}}}));
+  await page.reload();
+  await expect(panel.getByText('Account temporarily unavailable.',{exact:true})).toBeVisible();
+  await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  const signedOut = await browser.newContext();
+  const signedOutPage = await signedOut.newPage();
+  await signedOutPage.goto('http://127.0.0.1:5174/#/account');
+  const signedOutPanel = signedOutPage.locator('.account-connection');
+  await expect(signedOutPanel.getByRole('button',{name:'Sign in with Cognito'})).toBeVisible();
+  await expect(signedOutPanel.getByRole('button',{name:'Sign out of live account'})).toHaveCount(0);
+  await signedOut.close();
+});

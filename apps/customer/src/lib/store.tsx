@@ -38,6 +38,7 @@ type Store = {
   reset: () => void;
   storageError: boolean;
   cloud: boolean;
+  authenticated: boolean;
   connection: Connection;
   connectionError: string;
   refresh: () => Promise<void>;
@@ -130,6 +131,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const epoch = useRef(0);
   const owner = useRef('');
   const loadId = useRef(0);
+  const [authenticated, setAuthenticated] = useState(false);
   const [storageError, storageFailed] = useState(false);
   const [connection, connect] = useState<Connection>(cloud ? 'loading' : 'demo');
   const [connectionError, fail] = useState('');
@@ -195,6 +197,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const manager = authManager();
       const loaded = (user: { profile: { sub: string }; expired?: boolean }) => {
         if (!active) return;
+        setAuthenticated(true);
         if (owner.current !== user.profile.sub) {
           epoch.current++;
           owner.current = user.profile.sub;
@@ -208,6 +211,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         epoch.current++;
         owner.current = '';
+        setAuthenticated(false);
         update(emptyWorkspace());
         setReservations([]);
         fail('');
@@ -422,6 +426,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         },
         storageError,
         cloud,
+        authenticated,
         connection,
         connectionError,
         refresh,

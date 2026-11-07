@@ -27,6 +27,7 @@ export default function Account() {
       setData,
       reset,
       cloud,
+      authenticated,
       connection: accountStatus,
       connectionError,
       refresh,
@@ -286,11 +287,13 @@ export default function Account() {
             </span>
             <h2>{t("Your live account")}</h2>
             <p className="muted">
-              {cloud
+              {authenticated
+                ? t("Your business profile and account settings are available here.")
+                : cloud
                 ? t("Sign in to load your customer records. Failed requests never fall back to demo data.")
                 : t("This build is using the local demo. Configure VITE_API_BASE_URL and Cognito to use your customer account.")}
             </p>
-            <button
+            {!authenticated && <button
               className="button secondary full"
               onClick={() =>
                 signIn().catch((e) => {
@@ -299,14 +302,14 @@ export default function Account() {
                 })
               }
             >
-              <LogIn size={16} />{t(" Sign in with Cognito")}</button>
-            <button className="text-button full center" disabled={busy} onClick={checkConnection}>
+              <LogIn size={16} />{t(" Sign in with Cognito")}</button>}
+            {authenticated && <button className="text-button full center" disabled={busy} onClick={checkConnection}>
               {busy ? t("Checking…") : t("Check account connection")} <ArrowRight size={15} />
-            </button>
-            <button
+            </button>}
+            {authenticated && <button
               className="text-button full center"
               onClick={() => signOut().catch((e) => notify(e.message))}
-            >{t("Sign out of live account")}</button>
+            >{t("Sign out of live account")}</button>}
             {cloud && (
               <p className="connection-message" role="status">
                 {accountStatus === 'ready'
