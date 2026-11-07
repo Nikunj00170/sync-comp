@@ -5392,3 +5392,17 @@ button, input, select, textarea, a { scroll-margin-block: 90px; }
 .workspace-switch:focus-visible { outline: 2px solid #e40000; outline-offset: 3px; }
 
 .connection-message.success { color: #346451; background: #f0f7f3; }
+
+/* Keep account panels and form rows on one spacing rhythm. */
+.account-layout { --account-panel-padding: 24px; }
+.account-layout .panel { padding: var(--account-panel-padding); }
+.account-layout .section-heading { margin-bottom: 24px; }
+.account-layout .form-grid { gap: 20px 20px; margin: 0 0 24px; }
+.account-layout .form-field, .account-layout .business-priorities { margin: 0; }
+.account-layout .form-grid > .check-label { grid-column: 1 / -1; min-height: 44px; margin: 0; padding: 12px 0; }
+.account-layout .business-priorities legend { margin-bottom: 12px; }
+.account-signin-prompt h2 { margin: 0 0 12px; }
+.account-signin-prompt p { margin: 0; }
+@media (max-width: 760px) {
+  .account-layout { --account-panel-padding: 20px; }
+}
