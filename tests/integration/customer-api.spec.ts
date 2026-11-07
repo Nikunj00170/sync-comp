@@ -24,7 +24,7 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/#/account');
-  await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Business name', { exact: true })).toBeVisible();
   await page.getByLabel('Business name', { exact: true }).fill('Balaji Realty LLP');
   await page.getByLabel('Your name', { exact: true }).fill('Cloud Customer');
   await page.getByLabel('Email address', { exact: true }).fill('contact@example.com');
@@ -174,7 +174,7 @@ test('Hindi controls preserve canonical API fields and cloud records', async ({ 
   const profile = { name: 'आन्या शर्मा', business: 'सुरक्षित व्यवसाय', email: 'cloud@example.com', industry: 'professional', city: 'पुणे', tier: 1, employees: 8, sites: 1, budget: 6000, hasGstin: true, priorities: ['productivity'], address: '२४, पुणे, महाराष्ट्र', phone: '' };
   expect((await context.request.put(api + '/v1/me', { headers: { Authorization: 'Bearer ' + user.access_token }, data: profile })).status()).toBe(200);
   await page.goto('/#/account');
-  await expect(page.getByText('Customer API connected.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Business name', { exact: true })).toBeVisible();
   await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('hi');
   await page.getByLabel('व्यवसाय का नाम', { exact: true }).fill('नया सुरक्षित व्यवसाय');
   await page.getByRole('combobox', { name: 'उद्योग', exact: true }).selectOption('retail');
@@ -219,6 +219,7 @@ test('live account actions follow Cognito session even when account API fails', 
   await page.goto('/#/account');
   await expect(page.getByLabel('Business name', {exact:true})).toBeVisible();
   const panel = page.locator('.account-connection');
+  await expect(panel.getByText('Customer API connected.', {exact:true})).toHaveCount(0);
   await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
   await expect(panel.getByRole('button',{name:'Sign out of live account'})).toBeVisible();
   await page.route('**/v1/me',route=>route.fulfill({status:503,json:{error:{message:'Account temporarily unavailable.'}}}));

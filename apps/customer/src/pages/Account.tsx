@@ -310,11 +310,9 @@ export default function Account() {
               className="text-button full center"
               onClick={() => signOut().catch((e) => notify(e.message))}
             >{t("Sign out of live account")}</button>}
-            {cloud && (
+            {cloud && accountStatus !== 'ready' && (
               <p className="connection-message" role="status">
-                {accountStatus === 'ready'
-                  ? t("Customer API connected.")
-                  : accountStatus === 'loading'
+                {accountStatus === 'loading'
                     ? t("Loading account…")
                     : accountStatus === 'error'
                       ? t(connectionError || 'Your workspace could not be loaded')
