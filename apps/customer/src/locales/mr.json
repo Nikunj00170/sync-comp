@@ -582,7 +582,7 @@
   "Choose a verification provider first.": "प्रथम पडताळणी प्रदाता निवडा.",
   "Consent, a provider and two documents are required.": "संमती, प्रदाता व दोन कागदपत्रे आवश्यक आहेत.",
   "Please sign in to your customer account.": "कृपया तुमच्या ग्राहक खात्यात साइन इन करा.",
-  "Your session expired. Please sign in again.": "तुमच्या सत्राची मुदत संपली. पुन्हा साइन इन करा.",
+  "Your session expired. Please sign in again.": "तुमचे सत्र संपले. कृपया पुन्हा साइन इन करा.",
   "Your account changed. Please try again.": "तुमचे खाते बदलले आहे. पुन्हा प्रयत्न करा.",
   "Order not found.": "ऑर्डर सापडली नाही.",
   "Ticket not found.": "मदतीची विनंती सापडली नाही.",
@@ -758,5 +758,11 @@
   "Demo amount": "डेमो रक्कम",
   "UPI": "UPI",
   "Card": "कार्ड",
-  "Net banking": "नेट बँकिंग"
+  "Net banking": "नेट बँकिंग",
+  "Please wait {seconds} seconds before retrying.": "पुन्हा प्रयत्न करण्यापूर्वी {seconds} सेकंद थांबा.",
+  "Upload completed. Review consent to continue.": "अपलोड पूर्ण झाले. पुढे जाण्यासाठी संमती तपासा.",
+  "Retry upload completion": "अपलोड पूर्ण करण्यासाठी पुन्हा प्रयत्न करा",
+  "Too many requests. Please wait a moment and try again.": "खूप विनंत्या आहेत. थोडा वेळ थांबून पुन्हा प्रयत्न करा.",
+  "Account renewal is temporarily unavailable. Please try again shortly.": "खाते नूतनीकरण तात्पुरते उपलब्ध नाही. थोड्या वेळाने पुन्हा प्रयत्न करा.",
+  "This demo receipt is saved only on this device and does not settle a real bill.": "ही डेमो पावती फक्त या डिव्हाइसवर जतन होते आणि वास्तविक बिल भरत नाही."
 }

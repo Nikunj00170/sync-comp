@@ -31,7 +31,13 @@ import {
   type DocumentReservation,
 } from './api';
 import { authManager, accessToken } from './auth';
-import {demoPaymentMethods, readDemoPayments, writeDemoPayments, type DemoPayment, type DemoPaymentMethod} from './demoPayments';
+import {
+  demoPaymentMethods,
+  readDemoPayments,
+  writeDemoPayments,
+  type DemoPayment,
+  type DemoPaymentMethod,
+} from './demoPayments';
 const KEY = 'airtel-sync:customer:v1';
 export type Connection = 'demo' | 'signed-out' | 'loading' | 'ready' | 'error';
 type Store = {
@@ -53,6 +59,7 @@ type Store = {
   saveKyc: (provider: Kyc['provider'], consent: boolean) => Promise<void>;
   verify: () => Promise<void>;
   upload: (file: File) => Promise<void>;
+  completeDocument: (id: string) => Promise<void>;
   removeDocument: (id: string) => Promise<void>;
   reservations: DocumentReservation[];
   createTicket: (ticket: Pick<Ticket, 'subject' | 'category' | 'description'>) => Promise<void>;
@@ -135,15 +142,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const epoch = useRef(0);
   const owner = useRef('');
   const loadId = useRef(0);
-  const [paymentState, setPaymentState] = useState<{owner: string; items: DemoPayment[]}>(() => cloud ? {owner:'', items:[]} : {owner:'local-demo',items:readDemoPayments('local-demo')});
+  const [paymentState, setPaymentState] = useState<{ owner: string; items: DemoPayment[] }>(() =>
+    cloud
+      ? { owner: '', items: [] }
+      : { owner: 'local-demo', items: readDemoPayments('local-demo') },
+  );
   const addPayment = (payment: DemoPayment) => {
     const scope = cloud ? owner.current : 'local-demo';
     if (!scope) throw new Error('Please sign in to your customer account.');
-    setPaymentState(previous => {
+    setPaymentState((previous) => {
       const items = previous.owner === scope ? previous.items : readDemoPayments(scope);
-      const next = [...items.filter(item => !(payment.orderId && item.orderId === payment.orderId) && !(payment.invoiceId && item.invoiceId === payment.invoiceId)), payment];
-      try {writeDemoPayments(scope, next);} catch {storageFailed(true);}
-      return {owner:scope,items:next};
+      const next = [
+        ...items.filter(
+          (item) =>
+            !(payment.orderId && item.orderId === payment.orderId) &&
+            !(payment.invoiceId && item.invoiceId === payment.invoiceId),
+        ),
+        payment,
+      ];
+      try {
+        writeDemoPayments(scope, next);
+      } catch {
+        storageFailed(true);
+      }
+      return { owner: scope, items: next };
     });
   };
   const [authenticated, setAuthenticated] = useState(false);
@@ -151,36 +173,56 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [connection, connect] = useState<Connection>(cloud ? 'loading' : 'demo');
   const [connectionError, fail] = useState('');
   const [reservations, setReservations] = useState<DocumentReservation[]>([]);
+  const connectionRef = useRef(connection);
+  connectionRef.current = connection;
+  const renewalTimerAttempted = useRef({ expiring: false, expired: false });
+  const refreshFlight = useRef<{ epoch: number; promise: Promise<void> } | null>(null);
   const call = useCallback(async <T,>(operation: (token: string) => Promise<T>) => {
     const session = epoch.current;
+    let token = await accessToken();
+    if (epoch.current !== session) throw new Error('Your account changed. Please try again.');
+    let result: T;
     try {
-      const result = await operation(await accessToken());
-      if (epoch.current !== session) throw new Error('Your account changed. Please try again.');
-      return result;
+      result = await operation(token);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        await authManager().removeUser();
-      }
-      throw error;
+      // An API failure is not proof that the Cognito session was revoked. Refresh at most once.
+      if (!(error instanceof ApiError) || error.status !== 401 || epoch.current !== session)
+        throw error;
+      const renewed = await accessToken(true);
+      if (epoch.current !== session || renewed === token) throw error;
+      token = renewed;
+      result = await operation(token);
     }
+    if (epoch.current !== session) throw new Error('Your account changed. Please try again.');
+    return result;
   }, []);
-  const refresh = useCallback(async () => {
+  const loadWorkspace = useCallback(async () => {
     if (!cloud) return;
     const session = epoch.current;
     const request = ++loadId.current;
     try {
       const token = await accessToken();
       const [profile, orders, invoices, kyc, tickets, notifications, products, docs] =
-        await Promise.all([
-          customerApi.profile(token),
-          customerApi.orders(token),
-          customerApi.invoices(token),
-          customerApi.kyc(token),
-          customerApi.tickets(token),
-          customerApi.notifications(token),
-          customerApi.catalogue(),
-          customerApi.documents(token),
-        ]);
+        await (async () => {
+          // Limit fan-out instead of sending eight simultaneous requests to the hosted API.
+          const [profile, kyc] = await Promise.all([
+            customerApi.profile(token),
+            customerApi.kyc(token),
+          ]);
+          const [orders, invoices] = await Promise.all([
+            customerApi.orders(token),
+            customerApi.invoices(token),
+          ]);
+          const [tickets, notifications] = await Promise.all([
+            customerApi.tickets(token),
+            customerApi.notifications(token),
+          ]);
+          const [products, docs] = await Promise.all([
+            customerApi.catalogue(),
+            customerApi.documents(token),
+          ]);
+          return [profile, orders, invoices, kyc, tickets, notifications, products, docs] as const;
+        })();
       assertCatalogue(products);
       if (epoch.current !== session || request !== loadId.current) return;
       update((previous) => ({
@@ -197,14 +239,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fail('');
     } catch (error) {
       if (epoch.current !== session || request !== loadId.current) return;
-      if (error instanceof ApiError && error.status === 401) {
-        await authManager().removeUser();
-        return;
-      }
       fail((error as Error).message);
-      connect('error');
+      // Background errors must not hide an acknowledged order or completed upload.
+      if (connectionRef.current !== 'ready') connect('error');
     }
   }, [cloud]);
+  const refresh = useCallback(() => {
+    const session = epoch.current;
+    if (refreshFlight.current?.epoch === session) return refreshFlight.current.promise;
+    const promise = loadWorkspace();
+    refreshFlight.current = { epoch: session, promise };
+    void promise.finally(() => {
+      if (refreshFlight.current?.promise === promise) refreshFlight.current = null;
+    });
+    return promise;
+  }, [loadWorkspace]);
   useEffect(() => {
     if (!cloud) return;
     let active = true;
@@ -213,21 +262,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const loaded = (user: { profile: { sub: string }; expired?: boolean }) => {
         if (!active) return;
         setAuthenticated(true);
-        if (owner.current !== user.profile.sub) {
+        renewalTimerAttempted.current = { expiring: false, expired: Boolean(user.expired) };
+        const changedOwner = owner.current !== user.profile.sub;
+        if (changedOwner) {
           epoch.current++;
           owner.current = user.profile.sub;
-          setPaymentState({owner:user.profile.sub,items:readDemoPayments(user.profile.sub)});
+          setPaymentState({ owner: user.profile.sub, items: readDemoPayments(user.profile.sub) });
           update(emptyWorkspace());
           setReservations([]);
         }
-        connect('loading');
+        if (changedOwner || connectionRef.current !== 'ready') connect('loading');
         void refresh();
       };
       const unloaded = () => {
         if (!active) return;
         epoch.current++;
         owner.current = '';
-        setPaymentState({owner:'',items:[]});
+        setPaymentState({ owner: '', items: [] });
         setAuthenticated(false);
         update(emptyWorkspace());
         setReservations([]);
@@ -236,12 +287,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       };
       manager.events.addUserLoaded(loaded);
       manager.events.addUserUnloaded(unloaded);
-      manager.events.addAccessTokenExpired(unloaded);
+      const expiring = () => {
+        if (renewalTimerAttempted.current.expiring) return;
+        renewalTimerAttempted.current.expiring = true;
+        void accessToken(true).catch(() => {
+          /* Retry on the next user action. */
+        });
+      };
+      const expired = () => {
+        if (renewalTimerAttempted.current.expired) return;
+        renewalTimerAttempted.current.expired = true;
+        void refresh();
+      };
+      manager.events.addAccessTokenExpiring(expiring);
+      manager.events.addAccessTokenExpired(expired);
       void manager
         .getUser()
         .then((user) => {
           if (!active) return;
-          if (user && !user.expired) loaded(user);
+          if (user) loaded(user);
           else unloaded();
         })
         .catch((error) => {
@@ -254,7 +318,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         active = false;
         manager.events.removeUserLoaded(loaded);
         manager.events.removeUserUnloaded(unloaded);
-        manager.events.removeAccessTokenExpired(unloaded);
+        manager.events.removeAccessTokenExpiring(expiring);
+        manager.events.removeAccessTokenExpired(expired);
       };
     } catch (error) {
       connect('error');
@@ -289,8 +354,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     });
   const saveProfile = async (profile: Profile) => {
     const parsed = profileSchema.parse(profile);
-    const saved = cloud ? await call((token) => customerApi.saveProfile(token, parsed)) : parsed;
-    const kyc = cloud ? await call(customerApi.kyc) : current.current.kyc;
+    const [saved, kyc] = cloud
+      ? await call(async (token) => {
+          const saved = await customerApi.saveProfile(token, parsed);
+          return [saved, await customerApi.kyc(token)] as const;
+        })
+      : [parsed, current.current.kyc];
     update((prev) => ({ ...prev, profile: saved, kyc, draftStep: 0 }));
   };
   const saveKyc = async (provider: Kyc['provider'], consent: boolean) => {
@@ -314,6 +383,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       ? await call(customerApi.verifyDemo)
       : { ...old, status: 'demo_verified' as const, verifiedAt: new Date().toISOString() };
     update((prev) => ({ ...prev, kyc }));
+  };
+  const completeDocument = async (id: string) => {
+    const document = await call((token) => customerApi.completeUpload(token, id));
+    update((previous) => ({
+      ...previous,
+      kyc: {
+        ...previous.kyc,
+        status: 'pending',
+        consent: false,
+        verifiedAt: undefined,
+        documents: [...previous.kyc.documents.filter((item) => item.id !== id), document],
+      },
+    }));
+    setReservations((previous) =>
+      previous.map((item) => (item.id === id ? { ...item, status: 'uploaded' } : item)),
+    );
   };
   const upload = async (file: File) => {
     if (
@@ -343,19 +428,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }));
       return;
     }
-    await call(async (token) => {
-      const authorization = await customerApi.upload(token, {
+    const uploadSession = epoch.current;
+    const authorization = await call((token) =>
+      customerApi.upload(token, { name: file.name, type: file.type, size: file.size }),
+    );
+    setReservations((previous) => [
+      ...previous,
+      {
+        id: authorization.documentId,
         name: file.name,
         type: file.type,
         size: file.size,
-      });
-      try {
-        await uploadBytes(authorization, file, token);
-        await customerApi.completeUpload(token, authorization.documentId);
-      } finally {
-        await refresh();
-      }
-    });
+        expiresAt: authorization.expiresAt,
+        status: 'pending',
+      },
+    ]);
+    if (epoch.current !== uploadSession) throw new Error('Your account changed. Please try again.');
+    await call((token) => uploadBytes(authorization, file, token));
+    if (epoch.current !== uploadSession) throw new Error('Your account changed. Please try again.');
+    await completeDocument(authorization.documentId);
   };
   const removeDocument = async (id: string) => {
     if (cloud) {
@@ -374,9 +465,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   };
   const payInvoice = (id: string, method: DemoPaymentMethod) => {
     if (!demoPaymentMethods.includes(method)) throw new Error('Choose a demo payment method.');
-    const invoice = current.current.invoices.find(item => item.id === id);
+    const invoice = current.current.invoices.find((item) => item.id === id);
     if (!invoice) throw new Error('Invoice not found.');
-    addPayment({reference:makeId('DEMO-PAY'),invoiceId:id,method,amount:invoice.total,business:invoice.billedTo?.business || current.current.profile.business,address:invoice.billedTo?.address || current.current.profile.address,createdAt:new Date().toISOString()});
+    addPayment({
+      reference: makeId('DEMO-PAY'),
+      invoiceId: id,
+      method,
+      amount: invoice.total,
+      business: invoice.billedTo?.business || current.current.profile.business,
+      address: invoice.billedTo?.address || current.current.profile.address,
+      createdAt: new Date().toISOString(),
+    });
   };
   const placeOrder = async (method: DemoPaymentMethod) => {
     if (!demoPaymentMethods.includes(method)) throw new Error('Choose a demo payment method.');
@@ -396,16 +495,46 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       order = await call((token) => customerApi.createOrder(token, workspace.cart, key));
       sessionStorage.removeItem(keyName);
     } else order = makeOrder(workspace.cart, workspace.profile, workspace.kyc);
-    const receipt: DemoPayment = {reference:makeId('DEMO-PAY'),orderId:order.id,method,amount:order.quote.total + order.quote.setup,business:workspace.profile.business,address:order.address,createdAt:new Date().toISOString()};
-    const invoice = cloud ? undefined : {...makeInvoice(order.lines, workspace.profile, new Date().toLocaleDateString('en-IN', {month:'long',year:'numeric'})), status:'paid' as const, paymentReference:receipt.reference};
+    const receipt: DemoPayment = {
+      reference: makeId('DEMO-PAY'),
+      orderId: order.id,
+      method,
+      amount: order.quote.total + order.quote.setup,
+      business: workspace.profile.business,
+      address: order.address,
+      createdAt: new Date().toISOString(),
+    };
+    const invoice = cloud
+      ? undefined
+      : {
+          ...makeInvoice(
+            order.lines,
+            workspace.profile,
+            new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+          ),
+          status: 'paid' as const,
+          paymentReference: receipt.reference,
+        };
     if (invoice) receipt.invoiceId = invoice.id;
     addPayment(receipt);
     update((prev) => ({
       ...prev,
       cart: [],
       orders: [order, ...prev.orders.filter((x) => x.id !== order.id)],
-      invoices: invoice ? [invoice,...prev.invoices] : prev.invoices,
-      notifications: cloud ? prev.notifications : [{id:makeId('NOTICE'),title:'Demo order placed',text:order.name + ' is ready to track. No money was collected.',route:'/orders/'+order.id,read:false,createdAt:order.createdAt},...prev.notifications],
+      invoices: invoice ? [invoice, ...prev.invoices] : prev.invoices,
+      notifications: cloud
+        ? prev.notifications
+        : [
+            {
+              id: makeId('NOTICE'),
+              title: 'Demo order placed',
+              text: order.name + ' is ready to track. No money was collected.',
+              route: '/orders/' + order.id,
+              read: false,
+              createdAt: order.createdAt,
+            },
+            ...prev.notifications,
+          ],
     }));
     if (cloud) await refresh();
     return order;
@@ -452,7 +581,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         data,
         setData,
         reset: () => {
-          if (!cloud) {update(initialWorkspace());setPaymentState({owner:'local-demo',items:[]});writeDemoPayments('local-demo',[]);}
+          if (!cloud) {
+            update(initialWorkspace());
+            setPaymentState({ owner: 'local-demo', items: [] });
+            writeDemoPayments('local-demo', []);
+          }
         },
         storageError,
         cloud,
@@ -469,6 +602,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         saveKyc,
         verify,
         upload,
+        completeDocument,
         removeDocument,
         reservations,
         createTicket,

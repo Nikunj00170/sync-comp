@@ -18,7 +18,7 @@ import { useWorkspace } from '../lib/store';
 import { useNotify } from '../lib/feedback';
 import { Modal } from '../components/Modal';
 import { download } from '../lib/downloads';
-import { authManager, signIn, signOut } from '../lib/auth';
+import { signIn, signOut } from '../lib/auth';
 import { useAction } from '../lib/actions';
 export default function Account() {
   const { t, locale } = useI18n();
@@ -61,11 +61,6 @@ export default function Account() {
   async function checkConnection() {
     try {
       setBusy(true);
-      const user = await authManager().getUser();
-      if (!user || user.expired)
-        throw new Error(
-          'Sign in to your Cognito account first. The demo workspace remains available without sign-in.',
-        );
       setConnection('');
       await refresh();
     } catch (e) {

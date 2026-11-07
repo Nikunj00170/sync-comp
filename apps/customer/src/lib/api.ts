@@ -15,6 +15,7 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public code = 'REQUEST_FAILED',
+    public retryAfterSeconds?: number,
   ) {
     super(message);
   }
@@ -53,31 +54,58 @@ async function response(
 ) {
   if (!cloudConfigured) throw new ApiError(0, 'The customer API has not been configured.');
   let result: Response;
-  try {
-    result = await fetch(apiBase + path, {
-      method,
-      headers: {
-        ...(token ? { Authorization: 'Bearer ' + token } : {}),
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...headers,
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      // Allow the hosted API its full 30-second integration window, plus network overhead.
-      signal: AbortSignal.timeout(35000),
-      cache: 'no-store',
-    });
-  } catch {
-    throw new ApiError(0, 'Cannot reach the customer API. Check your connection and try again.');
+  for (let attempt = 0; ; attempt++) {
+    try {
+      result = await fetch(apiBase + path, {
+        method,
+        headers: {
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        // Allow the hosted API its full 30-second integration window, plus network overhead.
+        signal: AbortSignal.timeout(35000),
+        cache: 'no-store',
+      });
+    } catch {
+      throw new ApiError(0, 'Cannot reach the customer API. Check your connection and try again.');
+    }
+    const retryHeader = result.headers.get('Retry-After');
+    const parsedRetry = retryHeader === null ? NaN : Number(retryHeader);
+    const retryAfterSeconds = Number.isFinite(parsedRetry)
+      ? Math.max(0, parsedRetry)
+      : retryHeader && Number.isFinite(Date.parse(retryHeader))
+        ? Math.max(0, Math.ceil((Date.parse(retryHeader) - Date.now()) / 1000))
+        : undefined;
+    // Retry reads only. Replaying an upload reservation/order POST could create duplicates.
+    if (
+      result.status === 429 &&
+      method === 'GET' &&
+      attempt < 2 &&
+      (retryAfterSeconds === undefined || retryAfterSeconds <= 5)
+    ) {
+      await result.body?.cancel();
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(400 * (attempt + 1), (retryAfterSeconds ?? 0) * 1000)),
+      );
+      continue;
+    }
+    if (!result.ok) {
+      const error = await result.json().catch(() => null);
+      const message =
+        error?.error?.message || (typeof error?.message === 'string' ? error.message : null);
+      throw new ApiError(
+        result.status,
+        result.status === 429
+          ? 'Too many requests. Please wait a moment and try again.'
+          : message || `Your request could not be completed (${result.status}).`,
+        error?.error?.code,
+        retryAfterSeconds,
+      );
+    }
+    return result;
   }
-  if (!result.ok) {
-    const error = await result.json().catch(() => null);
-    throw new ApiError(
-      result.status,
-      error?.error?.message || `Your request could not be completed (${result.status}).`,
-      error?.error?.code,
-    );
-  }
-  return result;
 }
 async function request<T>(
   path: string,
@@ -134,7 +162,19 @@ export const customerApi = {
   kyc: (token: string) => request<Kyc>('/v1/kyc', token),
   saveKyc: (token: string, provider: string, consent: boolean) =>
     request<Kyc>('/v1/kyc', token, 'PUT', { provider, consent }),
-  assessKyc: (token: string) => request<{status: string; asOf: string; source: string; documents: {documentId: string; kind: string; maskedIdentifier?: string; issues: string[]}[]; issues: string[]}>('/v1/kyc/assessment', token, 'POST'),
+  assessKyc: (token: string) =>
+    request<{
+      status: string;
+      asOf: string;
+      source: string;
+      documents: {
+        documentId: string;
+        kind: string;
+        maskedIdentifier?: string;
+        issues: string[];
+      }[];
+      issues: string[];
+    }>('/v1/kyc/assessment', token, 'POST'),
   verifyDemo: (token: string) => request<Kyc>('/v1/kyc/demo-verification', token, 'POST'),
   documents: (token: string) => collection<DocumentReservation>('/v1/documents', token),
   upload: (token: string, file: { name: string; type: string; size: number }) =>

@@ -54,7 +54,7 @@ The catalogue must match the shared app catalogue before transactions continue.
 The backend defaults to disabling simulated checkout/KYC. To exercise those paths
 in a demo environment, explicitly set SYNC_DEMO_ENABLED=true and KYC_MODE=mock.
 This does not enable real identity verification, payments or service purchase.
-Cloud payment simulation, service quantity mutation, installation rescheduling and
+Service quantity mutation, installation rescheduling and
 customer milestone advancement are unavailable because those customer APIs do not
 exist. Local demo controls remain available only in local demo mode.
 
@@ -137,3 +137,21 @@ limitation rather than pretending the web redirect is a native login. Device and
 live-provider testing are separate from the mobile browser checks.
 
 Font source: [Google Noto Sans Devanagari](https://github.com/google/fonts/tree/main/ofl/notosansdevanagari).
+
+## Demo checkout and request recovery
+
+Checkout opens a browser-only UPI/card/net-banking simulation; it collects no payment
+credentials and makes no payment-provider or payment-API calls. After confirmation,
+the normal order API still creates the demo order/invoice; no API failure is silently
+replaced with a local order. Local-demo checkout also creates its invoice and notice.
+Receipts persist per account on this device and appear beside order tracking. Invoice
+payment simulation overlays only the browser view; the server invoice remains unchanged.
+Clear site data to remove stored demo receipts. Server demo checkout/KYC still needs
+`SYNC_DEMO_ENABLED=true` with `KYC_MODE=mock` in the controlled prototype environment.
+
+Cognito renewal is single-flight and retains a still-valid token during temporary
+provider outages. HTTP 429 does not sign out the customer. Account reads have bounded
+backoff and limited concurrency; successful uploads update document state directly.
+Interrupted upload completion can resume using the existing reservation and stored
+bytes. Unreadable or mismatched KYC documents still require review; errors do not
+fabricate verification. No live identity or payment gateway is connected.

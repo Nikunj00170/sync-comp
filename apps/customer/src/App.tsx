@@ -54,7 +54,7 @@ const navigation = [
 ];
 export default function App() {
   const { t, locale, language, setLanguage } = useI18n();
-  const { data, storageError, cloud, connection, connectionError, refresh, markRead } =
+  const { data, storageError, cloud, authenticated, connection, connectionError, refresh, markRead } =
     useWorkspace();
   const { run, busy } = useAction();
   const notify = useNotify();
@@ -135,7 +135,7 @@ export default function App() {
         <Link to="/" className="brand-link">
           <Brand />
         </Link>
-        <Link to="/account" className="workspace-switch" title={t("Open business profile")}>
+        <Link to="/account" className="workspace-switch" title={t("Open business profile")} onClick={() => setMenu(false)}>
           <div className="business-avatar">{data.profile.business.slice(0, 1) || t("N")}</div>
           <span>
             <strong>{data.profile.business || t("My business")}</strong>
@@ -244,6 +244,9 @@ export default function App() {
           {storageError && (
             <div role="alert" className="notice warning">{t("Your browser storage is full or unavailable. Changes will last only until you close this page.")}</div>
           )}
+          {cloud && connection === 'ready' && connectionError && <div className="notice warning" role="alert">
+            <span>{t(connectionError)}</span> <button className="text-button" disabled={busy} onClick={() => void run(refresh)}>{t('Try again')}</button>
+          </div>}
           <Suspense
             fallback={
               <div className="route-loading" role="status">
@@ -269,11 +272,11 @@ export default function App() {
                 </p>
                 {connection !== 'loading' && (
                   <div className="button-row">
-                    <button
+                    {!authenticated && <button
                       className="button primary"
                       disabled={busy}
                       onClick={() => void run(signIn)}
-                    >{t("Sign in with Cognito")}</button>
+                    >{t("Sign in with Cognito")}</button>}
                     {connection === 'error' && (
                       <button
                         className="button secondary"

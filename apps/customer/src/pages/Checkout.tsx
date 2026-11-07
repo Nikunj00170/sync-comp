@@ -239,6 +239,7 @@ export default function Checkout() {
       </div>
       {paymentOpen && <Modal title={t('Demo payment')} onClose={() => {if (!busy) setPaymentOpen(false);}}>
         <p className="notice">{t('This is a payment simulation. No card, bank, or UPI details are needed. No money will be collected.')}</p>
+        <p className="muted small">{t('This demo receipt is saved only on this device and does not settle a real bill.')}</p>
         <div className="payment-amount"><span>{data.profile.business}</span><strong>{money(q.total + q.setup)}</strong></div>
         <div className="summary-lines"><span>{t('Monthly total')}<strong>{money(q.total)}</strong></span><span>{t('One-time setup, before demo tax')}<strong>{money(q.setup)}</strong></span></div>
         <div className="payment-methods">{demoPaymentMethods.map(item => <button key={item} disabled={busy} aria-pressed={method === item} className={method === item ? 'selected' : ''} onClick={() => setMethod(item)}>{t(item)}</button>)}</div>

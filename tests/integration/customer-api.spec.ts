@@ -85,11 +85,14 @@ test('real Spring API: onboarding, recommendations, upload, checkout, invoices, 
   await page.getByRole('checkbox', { name: /I understand this is a demo order/ }).check();
   await expect(page.getByRole('button', { name: 'Pay now (demo)' })).toBeEnabled();
   await page.getByRole('button', { name: 'Pay now (demo)' }).click();
+  await page.route(/\/v1\/invoices\?/,route=>route.fulfill({status:429,headers:{'Retry-After':'0'},json:{message:'Too Many Requests'}}));
   await page.getByRole('dialog').getByRole('button',{name:'Simulate successful payment',exact:true}).click();
   await expect(page).toHaveURL(/#\/orders\/SYNC-/);
   const id = page.url().split('/').at(-1)!;
   await expect(page.locator('.demo-payment-receipt').getByText('Demo payment recorded',{exact:true})).toBeVisible();
   await expect(page.getByRole('button', { name: 'Simulate next milestone' })).toBeHidden();
+  expect(await page.evaluate(()=>!!sessionStorage.getItem('oidc.user:https://issuer.test.example/pool:test-app-client'))).toBe(true);
+  await page.unroute(/\/v1\/invoices\?/);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Your connection journey' })).toBeVisible();
   await page.goto('/#/billing');
@@ -249,4 +252,33 @@ test('live account actions follow Cognito session even when account API fails', 
   await expect(signedOutPanel.getByRole('button',{name:'Sign in with Cognito'})).toBeVisible();
   await expect(signedOutPanel.getByRole('button',{name:'Sign out of live account'})).toHaveCount(0);
   await signedOut.close();
+});
+
+
+test('KYC completion 429 preserves login, resumes stored bytes and avoids account-wide upload refreshes', async ({page, context}, info) => {
+  const user=await login(context,info.project.name==='desktop'?14:15);
+  const headers={Authorization:'Bearer '+user.access_token};
+  const profile={name:'Anita Shah',business:'Balaji Realty LLP',email:'kyc@example.com',industry:'professional',city:'Kochi',tier:2,employees:8,sites:1,budget:6000,hasGstin:true,priorities:['productivity'],address:'Shop/Unit 38, Civil Lines, Kochi, Kerala - 752083',phone:''};
+  expect((await context.request.put(api+'/v1/me',{headers,data:profile})).status()).toBe(200);
+  let profileReads=0;page.on('request',request=>{if(request.url()===api+'/v1/me' && request.method()==='GET') profileReads++;});
+  await page.goto('/#/verification');
+  await page.getByRole('button',{name:/^DigiLocker/}).click();
+  const consent=page.getByRole('checkbox',{name:/I consent to OCR extraction/});await expect(consent).toBeEnabled();
+  const before=profileReads;
+  let throttle=true;
+  await page.route('**/v1/documents/*/complete',async route=>{
+    if(throttle){throttle=false;await route.fulfill({status:429,headers:{'Retry-After':'1'},json:{message:'Too Many Requests'}});}else await route.continue();
+  });
+  await page.getByLabel('Add verification documents').setInputFiles('case_source/kyc_documents/K05_gst_certificate.png');
+  await expect(page.getByRole('alert')).toContainText('Too many requests.');
+  expect(await page.evaluate(()=>!!sessionStorage.getItem('oidc.user:https://issuer.test.example/pool:test-app-client'))).toBe(true);
+  const retry=page.getByRole('button',{name:'Retry upload completion',exact:true});await expect(retry).toBeEnabled();await retry.click();
+  await expect(page.locator('.document-list').getByText('K05_gst_certificate.png',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Add verification documents')).toBeEnabled();
+  await page.getByLabel('Add verification documents').setInputFiles(['case_source/kyc_documents/K05_address_proof.png','case_source/kyc_documents/K05_signatory_id.png']);
+  await expect(page.locator('.document-list').getByText('K05_signatory_id.png',{exact:true})).toBeVisible();await expect(consent).toBeEnabled();
+  expect(profileReads).toBe(before);
+  await consent.check();await page.getByRole('button',{name:'Complete demo verification'}).click();
+  await expect(page.getByRole('heading',{name:'You’re ready for your next step.'})).toBeVisible();
+  await page.goto('/#/account');await expect(page.locator('.account-connection').getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
 });

@@ -307,6 +307,7 @@ export default function Billing() {
             <LockKeyhole size={19} />
             <span>{t("This is a payment simulation. No card, bank, or UPI details are needed. No money will be collected.")}</span>
           </div>
+          <p className="muted small">{t('This demo receipt is saved only on this device and does not settle a real bill.')}</p>
           <button className="button primary full" onClick={payDemo}>{t("Simulate successful payment ")}<ArrowRight size={17} />
           </button>
         </Modal>
