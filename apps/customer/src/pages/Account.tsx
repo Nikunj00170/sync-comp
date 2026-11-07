@@ -167,8 +167,9 @@ export default function Account() {
                   checked={profile.hasGstin}
                   onChange={(e) => setProfile((p) => ({ ...p, hasGstin: e.target.checked }))}
                 />{t("GST registered")}</label>
-              <fieldset className="form-field">
+              <fieldset className="business-priorities span-two">
                 <legend>{t("Business priorities")}</legend>
+                <div className="business-priority-options">
                 {['productivity', 'security', 'reliability', 'growth'].map((priority) => (
                   <label className="check-label" key={priority}>
                     <input
@@ -183,9 +184,10 @@ export default function Account() {
                         }))
                       }
                     />
-                    {t(priority)}
+                    <span>{t(priority)}</span>
                   </label>
                 ))}
+                </div>
               </fieldset>
               <label className="form-field span-two">{t("Business address")}<textarea
                   value={profile.address}
