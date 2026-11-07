@@ -28,6 +28,7 @@ export default function Account() {
       reset,
       cloud,
       connection: accountStatus,
+      connectionError,
       refresh,
       saveProfile,
     } = useWorkspace(),
@@ -64,8 +65,8 @@ export default function Account() {
         throw new Error(
           'Sign in to your Cognito account first. The demo workspace remains available without sign-in.',
         );
+      setConnection('');
       await refresh();
-      setConnection('Customer API responded successfully.');
     } catch (e) {
       setConnection((e as Error).message);
     } finally {
@@ -312,7 +313,9 @@ export default function Account() {
                   ? t("Customer API connected.")
                   : accountStatus === 'loading'
                     ? t("Loading account…")
-                    : t("Sign in to load your account.")}
+                    : accountStatus === 'error'
+                      ? t(connectionError || 'Your workspace could not be loaded')
+                      : t("Sign in to load your account.")}
               </p>
             )}
             {connection && (

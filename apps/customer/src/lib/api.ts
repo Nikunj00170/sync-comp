@@ -62,7 +62,8 @@ async function response(
         ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      // Allow the hosted API its full 30-second integration window, plus network overhead.
+      signal: AbortSignal.timeout(35000),
       cache: 'no-store',
     });
   } catch {
