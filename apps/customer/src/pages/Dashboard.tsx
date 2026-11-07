@@ -38,7 +38,7 @@ export default function Dashboard({ onAdvisor }: { onAdvisor: () => void }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">{t("YOUR BUSINESS, CONNECTED.")}</div>
-          <h1>{t("Good to see you, ")}{data.profile.name.split(' ')[0] || t("there")}
+          <h1>{t("Hello, ")}{data.profile.name.split(' ')[0] || t("there")}
             <span className="heading-dot">.</span>
           </h1>
           <p>{t("A little less managing. A lot more moving forward.")}</p>
