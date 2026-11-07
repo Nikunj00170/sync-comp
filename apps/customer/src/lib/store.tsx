@@ -49,7 +49,7 @@ type Store = {
   authenticated: boolean;
   connection: Connection;
   connectionError: string;
-  refresh: () => Promise<void>;
+  refresh: (options?: { reportErrors?: boolean }) => Promise<void>;
   saveProfile: (profile: Profile) => Promise<void>;
   matches: () => Promise<Recommendation[]>;
   placeOrder: (method: DemoPaymentMethod) => Promise<Order>;
@@ -176,7 +176,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const connectionRef = useRef(connection);
   connectionRef.current = connection;
   const renewalTimerAttempted = useRef({ expiring: false, expired: false });
-  const refreshFlight = useRef<{ epoch: number; promise: Promise<void> } | null>(null);
+  const refreshFlight = useRef<{ epoch: number; promise: Promise<string | undefined> } | null>(null);
   const call = useCallback(async <T,>(operation: (token: string) => Promise<T>) => {
     const session = epoch.current;
     let token = await accessToken();
@@ -224,7 +224,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           return [profile, orders, invoices, kyc, tickets, notifications, products, docs] as const;
         })();
       assertCatalogue(products);
-      if (epoch.current !== session || request !== loadId.current) return;
+      if (epoch.current !== session || request !== loadId.current)
+        return 'Your account changed. Please try again.';
       update((previous) => ({
         ...previous,
         profile,
@@ -238,21 +239,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       connect('ready');
       fail('');
     } catch (error) {
-      if (epoch.current !== session || request !== loadId.current) return;
+      if (epoch.current !== session || request !== loadId.current)
+        return 'Your account changed. Please try again.';
       fail((error as Error).message);
       // Background errors must not hide an acknowledged order or completed upload.
       if (connectionRef.current !== 'ready') connect('error');
+      return (error as Error).message;
     }
   }, [cloud]);
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async (options?: { reportErrors?: boolean }) => {
     const session = epoch.current;
-    if (refreshFlight.current?.epoch === session) return refreshFlight.current.promise;
-    const promise = loadWorkspace();
-    refreshFlight.current = { epoch: session, promise };
-    void promise.finally(() => {
-      if (refreshFlight.current?.promise === promise) refreshFlight.current = null;
-    });
-    return promise;
+    let flight = refreshFlight.current;
+    if (!flight || flight.epoch !== session) {
+      const promise = loadWorkspace();
+      flight = { epoch: session, promise };
+      refreshFlight.current = flight;
+      void promise.finally(() => {
+        if (refreshFlight.current?.promise === promise) refreshFlight.current = null;
+      });
+    }
+    const error = await flight.promise;
+    if (options?.reportErrors && error) throw new Error(error);
   }, [loadWorkspace]);
   useEffect(() => {
     if (!cloud) return;

@@ -245,6 +245,15 @@ test('live account actions follow Cognito session even when account API fails', 
   await page.reload();
   await expect(panel.getByText('Account temporarily unavailable.',{exact:true})).toBeVisible();
   await expect(panel.getByRole('button',{name:'Sign in with Cognito'})).toHaveCount(0);
+  await page.unroute('**/v1/me');
+  const check = panel.getByRole('button',{name:'Check account connection'});
+  await check.click();
+  await expect(panel.getByRole('status')).toHaveText('Your account connection is working.');
+  await expect(page.getByLabel('Business name',{exact:true})).toBeVisible();
+  await page.route('**/v1/me',route=>route.fulfill({status:503,json:{error:{message:'Account temporarily unavailable.'}}}));
+  await check.click();
+  await expect(panel.getByRole('status')).toHaveText('Account temporarily unavailable.');
+  await expect(panel.getByText('Your account connection is working.')).toHaveCount(0);
   const signedOut = await browser.newContext();
   const signedOutPage = await signedOut.newPage();
   await signedOutPage.goto('http://127.0.0.1:5174/#/account');

@@ -38,6 +38,7 @@ export default function Account() {
     [confirm, setConfirm] = useState(false),
     [error, setError] = useState(''),
     [connection, setConnection] = useState(''),
+    [connectionSucceeded, setConnectionSucceeded] = useState(false),
     [busy, setBusy] = useState(false);
   useEffect(() => setProfile({ ...data.profile }), [data.profile]);
   const action = useAction();
@@ -62,7 +63,10 @@ export default function Account() {
     try {
       setBusy(true);
       setConnection('');
-      await refresh();
+      setConnectionSucceeded(false);
+      await refresh({ reportErrors: true });
+      setConnectionSucceeded(true);
+      setConnection('Your account connection is working.');
     } catch (e) {
       setConnection((e as Error).message);
     } finally {
@@ -317,7 +321,7 @@ export default function Account() {
               </p>
             )}
             {connection && (
-              <p className="connection-message" role="status">
+              <p className={connectionSucceeded ? "connection-message success" : "connection-message"} role="status">
                 {t(connection)}
               </p>
             )}
