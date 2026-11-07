@@ -28,8 +28,24 @@ and is lost on restart. There are no seeded customers, orders or invoices.
 
 ## Configuration
 
-Export environment variables; [.env.example](.env.example) is a reference and is
-not loaded automatically by Spring.
+Copy [.env.example](.env.example) to this directory's ignored `.env.local` and edit
+backend settings there. Spring automatically loads it when launched from the
+repository root or `services/sync-backend`, including the IDE Run button. The root
+`.env.local` belongs to Vite and the separate Node AI service and is never read by Spring.
+
+Use single-line `KEY=value`, optional `export`, quoted values and comments. Values
+are literal: no shell command/variable expansion. OS/IDE environment variables,
+Java system properties and command-line arguments override the local file.
+`AWS_REGION` and `AWS_PROFILE` are also passed to AWS clients; credentials remain
+in the SDK's standard credential chain, outside this file. No new credentials are created.
+
+For DynamoDB-only local setup, set `SYNC_STORAGE=dynamodb`, `SYNC_DOCUMENTS=memory`,
+`AWS_REGION` and the three table names. Leave `SPRING_PROFILES_ACTIVE` blank until S3 is ready.
+Use `SYNC_BACKEND_ENV_FILE=/absolute/path/to/backend.env` for a different working
+directory, or `SYNC_BACKEND_ENV_ENABLED=false` to disable local loading. Tests
+disable it to avoid using developer accounts. Lambda skips automatic local-file
+loading and uses its real runtime variables/execution role. Local files are excluded
+from Git, JAR resources and Docker context.
 
 | Variable | Default / purpose |
 | --- | --- |

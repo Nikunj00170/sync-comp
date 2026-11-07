@@ -3,9 +3,12 @@
 Deployment is separate from implementation. Nothing here asserts that a table,
 bucket, Cognito pool or IAM role currently exists.
 
-The root `.env.example` defines API Gateway/Lambda, CloudFront, three DynamoDB
-tables, Cognito and private S3. Configure the Spring runtime with these existing
-names (replace placeholders before starting):
+The backend `.env.example` defines the Spring settings for DynamoDB, Cognito and
+private S3. Copy it to `services/sync-backend/.env.local` for automatic local loading
+from the repo root/backend working directory. The root env file is for frontend
+and Node AI-service configuration. In Lambda, configure real runtime variables;
+automatic local-file loading is skipped. Use these existing resource names
+(replace placeholders before starting):
 
 ```
 SPRING_PROFILES_ACTIVE=aws
